@@ -1,0 +1,256 @@
+{
+  "written_by": "Claude, from what we intended; written before reading the from-source graph",
+  "components": [
+    {
+      "name": "popup",
+      "states": {
+        "CLOSED": "popup not open",
+        "FORM": "settings form visible; may hold unsaved edits",
+        "CONFIRM1": "'Are you sure?' with an active Yes button",
+        "WAIT": "countdown showing, Yes button locked",
+        "CONFIRM2": "'Really sure?' with an active Yes button"
+      },
+      "initial": "CLOSED",
+      "transitions": [
+        [
+          "CLOSED",
+          "open",
+          "FORM",
+          "form shows the SAVED settings"
+        ],
+        [
+          "FORM",
+          "edit (tick box / type handle)",
+          "FORM",
+          "nothing stored"
+        ],
+        [
+          "FORM",
+          "save [no loosening]",
+          "FORM",
+          "settings stored at once"
+        ],
+        [
+          "FORM",
+          "save [loosening]",
+          "CONFIRM1",
+          "nothing stored"
+        ],
+        [
+          "CONFIRM1",
+          "yes",
+          "WAIT",
+          "15 s countdown starts; nothing stored"
+        ],
+        [
+          "CONFIRM1",
+          "keep blocking",
+          "FORM",
+          "edits discarded, form shows saved settings"
+        ],
+        [
+          "WAIT",
+          "yes",
+          "WAIT",
+          "locked: nothing happens, countdown unaffected"
+        ],
+        [
+          "WAIT",
+          "15 s elapse",
+          "CONFIRM2",
+          "nothing stored"
+        ],
+        [
+          "WAIT",
+          "keep blocking",
+          "FORM",
+          "countdown cancelled, edits discarded"
+        ],
+        [
+          "CONFIRM2",
+          "yes",
+          "FORM",
+          "the loosened settings are stored, exactly once"
+        ],
+        [
+          "CONFIRM2",
+          "keep blocking",
+          "FORM",
+          "edits discarded, nothing stored"
+        ],
+        [
+          "FORM|CONFIRM1|WAIT|CONFIRM2",
+          "close",
+          "CLOSED",
+          "nothing stored; no progress is remembered"
+        ],
+        [
+          "CLOSED",
+          "open, before saved settings have loaded",
+          "FORM",
+          "Save is disabled until they load"
+        ],
+        [
+          "FORM|CONFIRM1|CONFIRM2",
+          "click on Save / Yes / Keep blocking within 0.6 s of a switch between form and gate (or of the Yes button unlocking)",
+          "same",
+          "ignored: the 2nd half of a double click answers nothing. Not applied when the popup first opens, nor to the checkbox or text box"
+        ]
+      ],
+      "invariants": [
+        "A loosening is stored only by CONFIRM2.yes, never sooner than 15 s after CONFIRM1.yes. 'Loosening' is judged against what is in storage at the moment Save is pressed, not against this popup's earlier copy",
+        "Loosening = blocking turned off, or a handle added to the allowlist; anything else saves instantly",
+        "tick then untick the box, then save = no gate and no change",
+        "After keep blocking, starting again gives a full fresh gate (full 15 s)",
+        "save pressed twice = same result as once",
+        "CONFIRM2 shows the two buttons in swapped positions, and the message text is identical in CONFIRM1, WAIT and CONFIRM2 so nothing shifts: tapping one spot repeatedly through the wait ends on 'keep blocking', never on the final yes",
+        "The 15 s is measured on a monotonic clock; changing the device clock does not shorten it",
+        "Double click on Save [loosening] ends in CONFIRM1, not WAIT",
+        "Double click on the final yes stores once and ends in FORM with nothing further triggered",
+        "If the write to storage fails, the popup does not treat the change as saved",
+        "Opening the gate always cancels any countdown still running from an earlier one"
+      ]
+    },
+    {
+      "name": "video on an X page",
+      "states": {
+        "FREE": "the extension does nothing to it; X is in full control, exactly as if the extension were not installed",
+        "BLOCKED_UNKNOWN": "hidden, paused, overlay says the account could not be verified",
+        "BLOCKED_KNOWN": "hidden, paused, overlay names the non-followed account"
+      },
+      "allowed_when": "blocking is off OR it is a GIF OR author is followed OR author is me OR author is on the allowlist OR it belongs to the one post that has a live one-time pass and is shown on that post's own page",
+      "initial": "A new video is blocked no later than its first play attempt or the next scan (next frame, or within 250 ms in a hidden tab), unless already known to be allowed (fail closed)",
+      "transitions": [
+        [
+          "BLOCKED_UNKNOWN",
+          "author learned [not allowed]",
+          "BLOCKED_KNOWN",
+          ""
+        ],
+        [
+          "BLOCKED_UNKNOWN",
+          "author learned [allowed]",
+          "FREE",
+          ""
+        ],
+        [
+          "BLOCKED_KNOWN",
+          "becomes allowed (settings / follow data / pass)",
+          "FREE",
+          "overlay gone; muted, autoplay and the box's inline position are as they were before the block; it stays paused until X or the user plays it"
+        ],
+        [
+          "FREE",
+          "becomes not allowed (settings change)",
+          "BLOCKED_KNOWN, or BLOCKED_UNKNOWN if the author is not known",
+          "paused and hidden; in a background tab within 250 ms"
+        ],
+        [
+          "BLOCKED_*",
+          "play attempt by page or user",
+          "same",
+          "stays paused, no sound"
+        ],
+        [
+          "BLOCKED_*",
+          "tap overlay outside the button",
+          "same",
+          "the tap is stopped at the overlay in the bubble phase for click/pointer/touch/mouse events, so X's ordinary handlers never run: no navigation, no media viewer"
+        ],
+        [
+          "BLOCKED_*",
+          "tap 'Play in new tab'",
+          "same",
+          "one new tab; a second tap within 1.5 s opens nothing more; the X page itself does not navigate or start playing"
+        ],
+        [
+          "FREE",
+          "play attempt",
+          "FREE",
+          "plays normally"
+        ],
+        [
+          "BLOCKED_*",
+          "tap 'Play in new tab' when there is neither a direct file nor a post id",
+          "same",
+          "no tab; overlay says it can't be opened, and keeps saying so until a file or post id for it becomes known, when it returns to the normal message"
+        ],
+        [
+          "BLOCKED_*",
+          "X removes or swaps the <video> element",
+          "gone / re-evaluated",
+          "no orphan overlay left; the button acts on the current element"
+        ]
+      ],
+      "invariants": [
+        "FREE -> BLOCKED -> FREE: the only differences from an untouched video are that it is paused and carries the same data-xvg=ok marker every checked video carries",
+        "Settings changes reach open X tabs without a reload",
+        "A blocked video never produces picture or sound on the X page",
+        "FREE -> BLOCKED -> FREE restores muted, autoplay and the box's inline position; playback itself is left paused for X to resume",
+        "While nothing changes on the page, the extension does no repeated work (no per-frame rescans)",
+        "The double-tap guard is per video: tapping Play on one video never deadens another video's button",
+        "Two videos sharing one container: freeing one never uncovers the other",
+        "Once an author is known to be followed, a later data record for the same media and same author that lacks the follow flag does not block it"
+      ]
+    },
+    {
+      "name": "player tab",
+      "states": {
+        "PLAYING(q)": "the one video, at quality q, no feed around it",
+        "EXPIRED": "message that the link has expired",
+        "CLOSED": ""
+      },
+      "initial": "PLAYING(best) if the stored link exists, else EXPIRED",
+      "transitions": [
+        [
+          "PLAYING(q)",
+          "pick quality r",
+          "PLAYING(r)",
+          "same position, same play/pause state"
+        ],
+        [
+          "PLAYING(q)",
+          "pick the same quality q",
+          "PLAYING(q)",
+          "nothing restarts"
+        ],
+        [
+          "PLAYING(q)",
+          "reload",
+          "PLAYING(best)",
+          "works for at least a day; the stored link is removed by the first clean-up that runs after 24 h"
+        ],
+        [
+          "PLAYING(q)|EXPIRED",
+          "close button",
+          "CLOSED",
+          ""
+        ],
+        [
+          "EXPIRED",
+          "anything",
+          "EXPIRED",
+          ""
+        ],
+        [
+          "PLAYING(q)",
+          "two quality switches before the first has loaded",
+          "PLAYING(last picked)",
+          "position and play/pause state are those from before the first switch"
+        ]
+      ],
+      "invariants": [
+        "No path from the player tab to another video",
+        "If X gave no direct file, the tap opens the post page with a pass for the videos of that one post only, lasting 15 minutes",
+        "Stored player links older than a day are cleaned whenever a video is opened, not only at browser start"
+      ]
+    }
+  ],
+  "accepted_gaps": [
+    "The one-time pass (fallback when X gives no direct file) is a single global slot: opening a second fallback video revokes the first; within 15 min it also applies in other tabs showing that same post, and to a video with no known author inside a quote card on that post's page",
+    "Caches of who-posted-what grow for the life of the tab",
+    "A pass that expires while its video is playing does not stop it at that instant; it is re-blocked at the next scan",
+    "If X's data names two different authors for the same media (a repost), the one processed last wins",
+    "Whether X has capture-phase tap handlers that still see taps on the overlay is not checked on the logged-in app"
+  ]
+}

@@ -19,6 +19,9 @@
   [hidden] { display: none !important; }
   #gate-msg { opacity: .85; min-height: 60px; }
   button:disabled { opacity: .5; }
+  #gate:not([hidden]) { display: flex; flex-direction: column; }
+  #gate.last #gate-yes { order: 1; }
+  #gate.last #gate-no { order: 2; }
   #gate-no { background: #00ba7c; }
   #gate-yes { background: #202327; border: 1px solid #333639; }
 </style>
@@ -31,7 +34,7 @@
     <div class="hint">One handle per line, with or without @</div>
     <textarea id="allowlist" spellcheck="false" autocapitalize="off"></textarea>
   </div>
-  <button id="save" type="button">Save</button>
+  <button id="save" type="button" disabled>Save</button>
   <div id="saved">Saved — reload X to apply everywhere</div>
   </div>
   <div id="gate" hidden>

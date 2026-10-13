@@ -1,0 +1,589 @@
+{
+ "rows": [
+  {
+   "component": "popup",
+   "kind": "initial",
+   "intended": "CLOSED",
+   "status": "match",
+   "source": "popup.html:40; popup.js:1-13",
+   "detail": "Nothing exists before the popup document loads; no state is persisted between openings."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CLOSED | open | FORM | form shows the SAVED settings",
+   "status": "match",
+   "source": "popup.js:9-13",
+   "detail": "fill(current) from storage in the load callback (blank/unticked for the instant before it runs)."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "FORM | edit (tick box / type handle) | FORM | nothing stored",
+   "status": "match",
+   "source": "popup.js:20-26",
+   "detail": "No input listeners."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "FORM | save [no loosening] | FORM | settings stored at once",
+   "status": "match",
+   "source": "popup.js:103-112,37-44",
+   "detail": "No gate: Save reads storage, then commit() writes in the read's callback (two async hops, no user step)."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "FORM | save [loosening] | CONFIRM1 | nothing stored",
+   "status": "match",
+   "source": "popup.js:106-110,67-76",
+   "detail": "gate() only switches the view."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CONFIRM1 | yes | WAIT | 15 s countdown starts; nothing stored",
+   "status": "match",
+   "source": "popup.js:76-97",
+   "detail": "end = performance.now()+15000; 250 ms interval; no storage call."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CONFIRM1 | keep blocking | FORM | edits discarded, form shows saved settings",
+   "status": "match",
+   "source": "popup.js:101,58-63,107",
+   "detail": "fill(current); current is what Save just read from storage."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "WAIT | yes | WAIT | locked: nothing happens, countdown unaffected",
+   "status": "match",
+   "source": "popup.js:81",
+   "detail": "Disabled button (click suppression is browser behaviour); `end` untouched."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "WAIT | 15 s elapse | CONFIRM2 | nothing stored",
+   "status": "match",
+   "source": "popup.js:82-95",
+   "detail": "Noticed by the 250 ms tick, so 0-250 ms after the 15 s; nothing stored."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "WAIT | keep blocking | FORM | countdown cancelled, edits discarded",
+   "status": "match",
+   "source": "popup.js:101,58-63",
+   "detail": "clearInterval + fill(current) + show('form')."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CONFIRM2 | yes | FORM | the loosened settings are stored, exactly once",
+   "status": "match",
+   "source": "popup.js:94,37-44",
+   "detail": "One storage.set; Save is dead for 600 ms afterwards. If the write fails nothing is stored and nothing is shown."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CONFIRM2 | keep blocking | FORM | edits discarded, nothing stored",
+   "status": "match",
+   "source": "popup.js:101,58-63",
+   "detail": "No storage call."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "FORM|CONFIRM1|WAIT|CONFIRM2 | close | CLOSED | nothing stored; no progress is remembered",
+   "status": "match",
+   "source": "popup.js:5-7,65-66",
+   "detail": "No unload handler, no persisted progress; a Save whose read is still pending does nothing."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "CLOSED | open, before saved settings have loaded | FORM | Save is disabled until they load",
+   "status": "match",
+   "source": "popup.html:37; popup.js:12",
+   "detail": "disabled attribute removed only in the load callback."
+  },
+  {
+   "component": "popup",
+   "kind": "transition",
+   "intended": "FORM|CONFIRM1|CONFIRM2 | click on Save / Yes / Keep blocking within 0.6 s of a switch between form and gate (or of the Yes button unlocking) | same | ignored: the 2nd half of a double click answers nothing. Not applied when the popup first opens, nor to the checkbox or text box",
+   "status": "match",
+   "source": "popup.js:7,49,54-56,77,93,94,101,104",
+   "detail": "shownAt is set by show() (both directions) and when stage 3 unlocks; Save, both yes handlers and Keep blocking test fresh(). Initial shownAt=-1e9; checkbox and textarea have no handlers."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "A loosening is stored only by CONFIRM2.yes, never sooner than 15 s after CONFIRM1.yes. 'Loosening' is judged against what is in storage at the moment Save is pressed, not against this popup's earlier copy",
+   "status": "match",
+   "source": "popup.js:94,79,106-110",
+   "detail": "Only the stage-3 handler commits a loosening `next`; it becomes reachable >=15 s (performance.now) after the stage-1 click. loosenings() runs in the callback of a storage read issued by the Save click. Note: the `next` captured then is written 15 s later as-is, replacing anything another context stored during the wait."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "Loosening = blocking turned off, or a handle added to the allowlist; anything else saves instantly",
+   "status": "match",
+   "source": "popup.js:29-35",
+   "detail": "Exactly the two conditions."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "tick then untick the box, then save = no gate and no change",
+   "status": "match",
+   "source": "popup.js:29-44",
+   "detail": "No gate; an identical value is written again and 'Saved' is shown."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "After keep blocking, starting again gives a full fresh gate (full 15 s)",
+   "status": "match",
+   "source": "popup.js:67-76,79",
+   "detail": "gate() rebuilds everything; `end` computed at the new stage-1 click."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "save pressed twice = same result as once",
+   "status": "match",
+   "source": "popup.js:103-112",
+   "detail": "Non-loosening: two reads and two identical writes. Loosening: the second click is ignored on the gate, or (if it precedes the first callback) gate() simply runs twice and stays at stage 1."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "CONFIRM2 shows the two buttons in swapped positions, and the message text is identical in CONFIRM1, WAIT and CONFIRM2 so nothing shifts: tapping one spot repeatedly through the wait ends on 'keep blocking', never on the final yes",
+   "status": "match",
+   "source": "popup.js:73,80,87-92; popup.html:16,20,22-26",
+   "detail": "Message is written once (line 73) and never again; class 'last' reorders the buttons. Derived from CSS without rendering: 'Keep blocking' then covers the former yes spot except its top 2px (the yes button has a 1px border), which falls in the gap between buttons - never on the final yes."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "The 15 s is measured on a monotonic clock; changing the device clock does not shorten it",
+   "status": "match",
+   "source": "popup.js:79,83",
+   "detail": "performance.now()."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "Double click on Save [loosening] ends in CONFIRM1, not WAIT",
+   "status": "match",
+   "source": "popup.js:49,77,101,104-110",
+   "detail": "Second click is ignored by fresh() on the gate; if it precedes the first read's callback it just triggers a second gate() into stage 1."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "Double click on the final yes stores once and ends in FORM with nothing further triggered",
+   "status": "not_determinable_statically",
+   "source": "popup.js:94,104; popup.html:32,35",
+   "detail": "Stores once and returns to FORM. The second click then lands on the form, where only Save is guarded; whether it hits the checkbox row (unsaved toggle) or just the textarea depends on rendered positions.",
+   "live_test": "Double-click 'Yes, do it' in the real popup (several vertical positions) and check whether the checkbox changes or anything else reacts."
+  },
+  {
+   "component": "popup",
+   "kind": "invariant",
+   "intended": "If the write to storage fails, the popup does not treat the change as saved",
+   "status": "match",
+   "source": "popup.js:38-40",
+   "detail": "On lastError the callback returns before `current = next` and before showing 'Saved' (no error is shown either)."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "initial",
+   "intended": "A new video is blocked no later than its first play attempt or the next scan (next frame, or at once in a hidden tab), unless already known to be allowed (fail closed)",
+   "status": "mismatch",
+   "source": "content.js:220-227,231-242",
+   "detail": "First play attempt: yes (guard). Next scan: next frame when visible. In a hidden tab the timeout path is used only if no frame-scan is pending; if a frame was requested just before the tab was hidden, `pending` stays true (line 222) and no scan runs until the tab is visible again. 'At once' is also a setTimeout that browsers throttle in background tabs."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "allowed_when",
+   "intended": "blocking is off OR it is a GIF OR author is followed OR author is me OR author is on the allowlist OR it belongs to the one post that has a live one-time pass and is shown on that post's own page",
+   "status": "match",
+   "source": "content.js:84-98",
+   "detail": "Each clause maps to a line; the pass needs pathname /status/<id> equal to the pass and the record's tweetId (or, without a record, the enclosing article's status link) equal to it."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_UNKNOWN | author learned [not allowed] | BLOCKED_KNOWN | ",
+   "status": "mismatch",
+   "source": "content.js:149-152",
+   "detail": "Normally the overlay text is updated on the next scan. But once the 'can't open' note has been shown on that overlay, block() returns at line 149 and the overlay never names the author."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_UNKNOWN | author learned [allowed] | FREE | ",
+   "status": "match",
+   "source": "content.js:202-206,163-179",
+   "detail": "unblock() on the next scan."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_KNOWN | becomes allowed (settings / follow data / pass) | FREE | overlay gone; muted, autoplay and the box's inline position are as they were before the block; it stays paused until X or the user plays it",
+   "status": "match",
+   "source": "content.js:163-179",
+   "detail": "Snapshot values restored, overlay and class removed, no play(). (If another blocked video shares the box the cover stays, per the shared-container invariant.)"
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "FREE | becomes not allowed (settings change) | BLOCKED_KNOWN, or BLOCKED_UNKNOWN if the author is not known | paused and hidden, also when the tab is in the background",
+   "status": "mismatch",
+   "source": "content.js:18-23,220-227",
+   "detail": "Visible tab, or hidden tab with no frame pending: yes (BLOCKED_UNKNOWN text when there is no record, line 152). Hidden tab with a frame-scan already pending when it was hidden: schedule() returns at line 222, nothing is paused or covered until the tab is shown or a new play/playing/loadeddata event fires."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_* | play attempt by page or user | same | stays paused, no sound",
+   "status": "not_determinable_statically",
+   "source": "content.js:116-117,231-242",
+   "detail": "The guard pauses on the play/playing/loadeddata event (after the request) and block() forces muted; whether a frame or sound escapes in between is timing-dependent.",
+   "live_test": "On x.com call play() on a blocked video from the console and via X's keyboard shortcuts while recording `paused`/timeupdate events and audio output."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_* | tap overlay outside the button | same | the tap is stopped at the overlay in the bubble phase for click/pointer/touch/mouse events, so X's ordinary handlers never run: no navigation, no media viewer",
+   "status": "match",
+   "source": "content.js:131-135",
+   "detail": "stopPropagation in the bubble phase for click, pointerdown, pointerup, touchstart, touchend, mousedown, mouseup; preventDefault on click. Not covered (and not claimed): dblclick, auxclick/middle click, contextmenu, move and key events."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_* | tap 'Play in new tab' | same | one new tab; a second tap within 1.5 s opens nothing more; the X page itself does not navigate or start playing",
+   "status": "match",
+   "source": "content.js:136-143,182-199",
+   "detail": "Per-overlay lastOpen; stop(e) on the click; video stays blocked."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "FREE | play attempt | FREE | plays normally",
+   "status": "match",
+   "source": "content.js:231-239",
+   "detail": "Guard does nothing when allowed."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_* | tap 'Play in new tab' when there is neither a direct file nor a post id | same | no tab; overlay says it can't be opened, and keeps saying so",
+   "status": "match",
+   "source": "content.js:144-149,186",
+   "detail": "openSingle returns false before sending; note flag makes block() leave the text alone."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "transition",
+   "intended": "BLOCKED_* | X removes or swaps the <video> element | gone / re-evaluated | no orphan overlay left; the button acts on the current element",
+   "status": "match",
+   "source": "content.js:142,170-178,211-217",
+   "detail": "Sweep removes overlays whose parent has no <video>; button resolves box.querySelector('video') at click time. A swapped-in element inherits the old overlay's note flag and double-tap timestamp; the box keeps inline position:relative after a sweep; the sweep waits while a frame-scan is stalled in a hidden tab."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "FREE -> BLOCKED -> FREE: the only differences from an untouched video are that it is paused and carries the same data-xvg=ok marker every checked video carries",
+   "status": "not_determinable_statically",
+   "source": "content.js:113-118,163-179",
+   "detail": "For values the page does not change while the video is blocked this holds. But block() re-forces muted/autoplay on every scan and unblock() restores the first-block snapshot, so anything X sets in between is lost; and X's own player state (it believes it is playing/muted) is outside this code.",
+   "live_test": "Block then free a video on x.com (toggle the setting) and diff its properties/attributes and X's player UI against a never-blocked video, including one whose mute state X changed meanwhile."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "Settings changes reach open X tabs without a reload",
+   "status": "match",
+   "source": "content.js:18-23",
+   "detail": "Mirror updated in storage.onChanged; the guard uses it immediately, the scan follows (subject to the hidden-tab stall above)."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "A blocked video never produces picture or sound on the X page",
+   "status": "not_determinable_statically",
+   "source": "content.js:111-122,220-242; content.css:1",
+   "detail": "Guaranteed only from the moment block() has run. Before the first scan/media event the element is untouched, and the guard acts after play has begun.",
+   "live_test": "Scroll a feed of non-followed videos (also load it in a background tab) while screen/audio recording, and check for any frame or sound before the overlay appears."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "FREE -> BLOCKED -> FREE restores muted, autoplay and the box's inline position; playback itself is left paused for X to resume",
+   "status": "match",
+   "source": "content.js:113-115,164-175",
+   "detail": "Exactly these three; no play()."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "While nothing changes on the page, the extension does no repeated work (no per-frame rescans)",
+   "status": "match",
+   "source": "content.js:149,157-161,174",
+   "detail": "Scans write nothing when nothing changed (setText, note flag, shared-box early return), so the observer is not re-triggered. A 500 ms pathname comparison always runs (lines 255-258) but does not scan."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "The double-tap guard is per video: tapping Play on one video never deadens another video's button",
+   "status": "match",
+   "source": "content.js:136",
+   "detail": "lastOpen is declared per overlay. Two videos in one box share one overlay and therefore one guard."
+  },
+  {
+   "component": "video on an X page",
+   "kind": "invariant",
+   "intended": "Two videos sharing one container: freeing one never uncovers the other",
+   "status": "match",
+   "source": "content.js:170-174",
+   "detail": "unblock() returns before removing class/overlay while the box contains a video[data-xvg=blocked]."
+  },
+  {
+   "component": "player tab",
+   "kind": "initial",
+   "intended": "PLAYING(best) if the stored link exists, else EXPIRED",
+   "status": "match",
+   "source": "player.js:9-15,37-38; inject.js:33-39",
+   "detail": "variants are sorted by bitrate descending upstream and variants[0] is loaded; play() may be refused by the browser's autoplay policy (then it sits paused)."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "PLAYING(q) | pick quality r | PLAYING(r) | same position, same play/pause state",
+   "status": "match",
+   "source": "player.js:44-55",
+   "detail": "resume captured before the src change, applied at loadedmetadata. A pause pressed while the new quality loads is overridden; playbackRate is reset by the browser."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "PLAYING(q) | pick the same quality q | PLAYING(q) | nothing restarts",
+   "status": "match",
+   "source": "player.js:51",
+   "detail": "No change event for the same option (browser behaviour)."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "PLAYING(q) | reload | PLAYING(best) | works for at least a day; the stored link is removed by the first clean-up that runs after 24 h",
+   "status": "match",
+   "source": "player.js:9-15; background.js:6,23-30",
+   "detail": "Key is removed only by cleanup when older than 864e5 ms; player.js itself applies no age limit."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "PLAYING(q)|EXPIRED | close button | CLOSED | ",
+   "status": "not_determinable_statically",
+   "source": "player.js:7",
+   "detail": "window.close() on a tab opened with chrome.tabs.create is browser-dependent.",
+   "live_test": "Click Close in a player tab opened by the extension in each target browser (desktop Chrome, mobile)."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "EXPIRED | anything | EXPIRED | ",
+   "status": "match",
+   "source": "player.js:11-15",
+   "detail": "Video removed, select hidden, no handlers except Close."
+  },
+  {
+   "component": "player tab",
+   "kind": "transition",
+   "intended": "PLAYING(q) | two quality switches before the first has loaded | PLAYING(last picked) | position and play/pause state are those from before the first switch",
+   "status": "match",
+   "source": "player.js:52-54",
+   "detail": "`if (!resume)` keeps the first capture."
+  },
+  {
+   "component": "player tab",
+   "kind": "invariant",
+   "intended": "No path from the player tab to another video",
+   "status": "match",
+   "source": "player.html:23-30; player.js:16-24",
+   "detail": "No links; post text set with textContent."
+  },
+  {
+   "component": "player tab",
+   "kind": "invariant",
+   "intended": "If X gave no direct file, the tap opens the post page with a pass for the videos of that one post only, lasting 15 minutes",
+   "status": "match",
+   "source": "background.js:15-19; content.js:93-96",
+   "detail": "allowOnce {tweetId, until: now+15 min}; honoured for records with that tweetId. The record-less quote-card case on that page is the exception listed under accepted gaps; each further fallback tap renews the 15 minutes."
+  },
+  {
+   "component": "player tab",
+   "kind": "invariant",
+   "intended": "Stored player links older than a day are cleaned whenever a video is opened, not only at browser start",
+   "status": "match",
+   "source": "background.js:6,23-30",
+   "detail": "cleanup() is called first for every xvg:open."
+  },
+  {
+   "component": "accepted_gaps",
+   "kind": "accepted_gap",
+   "intended": "The one-time pass (fallback when X gives no direct file) is a single global slot: opening a second fallback video revokes the first; within 15 min it also applies in other tabs showing that same post, and to a video with no known author inside a quote card on that post's page",
+   "status": "match",
+   "source": "background.js:16; content.js:21,93-96",
+   "detail": "One key; overwritten by the next fallback; line 95 has no quote-card test."
+  },
+  {
+   "component": "accepted_gaps",
+   "kind": "accepted_gap",
+   "intended": "Caches of who-posted-what grow for the life of the tab",
+   "status": "match",
+   "source": "content.js:4-6,29-37",
+   "detail": "No eviction."
+  },
+  {
+   "component": "accepted_gaps",
+   "kind": "accepted_gap",
+   "intended": "A pass that expires while its video is playing does not stop it at that instant; it is re-blocked at the next scan",
+   "status": "match",
+   "source": "content.js:93,202-206,231-238",
+   "detail": "No timer at `until`; isAllowed re-checks on every scan and media event (delayed further if the tab is hidden with a stalled frame)."
+  },
+  {
+   "component": "accepted_gaps",
+   "kind": "accepted_gap",
+   "intended": "If X's data names two different authors for the same media (a repost), the one processed last wins",
+   "status": "match",
+   "source": "content.js:30-36,58-68",
+   "detail": "byThumb/byMedia are overwritten by the latest record and are consulted first. The per-post fallback (byTweet) keeps the first record per media id instead."
+  },
+  {
+   "component": "accepted_gaps",
+   "kind": "accepted_gap",
+   "intended": "Whether X has capture-phase tap handlers that still see taps on the overlay is not checked on the logged-in app",
+   "status": "not_determinable_statically",
+   "source": "content.js:131-135",
+   "detail": "A statement about testing, not about code. The code stops only bubble-phase delivery.",
+   "live_test": "On logged-in x.com tap a blocked overlay and watch for navigation/media viewer; inspect ancestors with getEventListeners for capture-phase click/pointer handlers."
+  }
+ ],
+ "unintended": [
+  {
+   "component": "video on an X page",
+   "behaviour": "The 'can't open' note is never cleared: after a record or post id becomes available the button works, but the overlay keeps saying it can't be opened (and a swapped-in video inherits the note).",
+   "source": "content.js:143-149",
+   "matters": "yes",
+   "why": "Tells the user the video cannot be opened when it can; they are unlikely to tap again."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "Whether a video is treated as followed depends on the most recent API payload for it: a later payload that lacks the following flag (not a repost) overwrites the record with following=false; the per-post fallback keeps the first record instead.",
+   "source": "content.js:30-36,58-68; inject.js:29",
+   "matters": "yes",
+   "why": "A followed account's video can become blocked (or stay allowed) without any real change; not covered by the repost gap."
+  },
+  {
+   "component": "popup",
+   "behaviour": "Save is asynchronous and gate() does not clear a running interval; a second Save callback arriving after the stage-1 yes would leave an orphaned tick that later resets shownAt every 250 ms, making every button ignore clicks until the popup is closed.",
+   "source": "popup.js:67-99,103-112",
+   "matters": "no",
+   "why": "Needs a storage callback more than 600 ms late; fails safe (nothing stored)."
+  },
+  {
+   "component": "popup",
+   "behaviour": "The gated `next` is written 15 s later as captured, replacing anything another context stored during the wait.",
+   "source": "popup.js:94,106-109",
+   "matters": "no",
+   "why": "Needs two instances acting at once."
+  },
+  {
+   "component": "popup",
+   "behaviour": "A failed write is silent: the form shows the unsaved values with neither 'Saved' nor an error.",
+   "source": "popup.js:39,94",
+   "matters": "no",
+   "why": "Rare; safe direction."
+  },
+  {
+   "component": "popup",
+   "behaviour": "The form is read when the storage read returns, not at the click; hidden #gate-yes keeps a committing handler and class 'last' after a stage-3 cancel; 'Saved' hide timers are untracked; text says 'reload X' though changes apply live; text typed before load is overwritten.",
+   "source": "popup.js:11,42,92-94,108; popup.html:38",
+   "matters": "no",
+   "why": "Cosmetic or unreachable."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "unblock() restores the first-block snapshot, discarding whatever the page set on muted/autoplay while blocked.",
+   "source": "content.js:113-118,166-167",
+   "matters": "no",
+   "why": "Page-dependent; see the not-determinable row."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "Inline position:relative is left on the container after a sweep, an inherited overlay, or the shared-box early return.",
+   "source": "content.js:114,122,174-175,211-217",
+   "matters": "no",
+   "why": "Cosmetic."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "In a shared container the freed video stays invisible while a sibling is blocked; the button opens the first <video> in the box.",
+   "source": "content.js:142,174; content.css:1",
+   "matters": "no",
+   "why": "Only if X puts two videos in one container."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "The play guard never unblocks; an allowed video keeps its cover until the next scan.",
+   "source": "content.js:231-239",
+   "matters": "no",
+   "why": "One frame when visible."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "The double-tap guard uses the wall clock; after an extension reload the old page's button throws inside sendMessage with no notice.",
+   "source": "content.js:140,187",
+   "matters": "no",
+   "why": "Clock changes / stale pages only."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "Hidden-tab scans run via setTimeout(0) per mutation batch; a 500 ms pathname poll runs forever.",
+   "source": "content.js:226,255-258",
+   "matters": "no",
+   "why": "Bounded by browser timer throttling."
+  },
+  {
+   "component": "video on an X page",
+   "behaviour": "Records are accepted from a forgeable DOM event; elements get data-xvg* attributes; fetch/XHR are wrapped in the page world.",
+   "source": "content.js:26,119,144,159; inject.js:102-132",
+   "matters": "no",
+   "why": "Visible to X, not behaviour-changing."
+  },
+  {
+   "component": "accepted_gaps",
+   "behaviour": "allowOnce is never deleted from storage and each fallback tap renews it.",
+   "source": "background.js:16,23-30",
+   "matters": "no",
+   "why": "Expired values are ignored."
+  },
+  {
+   "component": "player tab",
+   "behaviour": "No media error handling; autoplay attribute removed after the first switch; pause pressed during a switch is overridden; payload write errors unchecked in the background.",
+   "source": "player.js:37-38,49,53; background.js:12-14",
+   "matters": "no",
+   "why": "Degraded feedback only."
+  }
+ ]
+}

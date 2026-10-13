@@ -27,6 +27,10 @@
     let list;
     try { list = JSON.parse(e.detail); } catch { return; }
     for (const rec of list) {
+      // A later response that merely omits the follow flag must not turn a
+      // followed author's video into a blocked one.
+      const old = rec.mediaId && byMedia.get(rec.mediaId);
+      if (old && old.following && old.screenName === rec.screenName) rec.following = true;
       if (rec.thumb) byThumb.set(rec.thumb, rec);
       if (rec.mediaId) byMedia.set(rec.mediaId, rec);
       if (rec.tweetId) {
@@ -104,12 +108,19 @@
            video.parentElement;
   }
 
+  // What the video and its box looked like before the first block, so
+  // unblocking puts them back exactly.
+  const before = new WeakMap();
+
   function block(video, rec) {
+    const box = containerOf(video);
+    if (!before.has(video)) {
+      before.set(video, { muted: video.muted, autoplay: video.autoplay, boxPosition: box ? box.style.position : "" });
+    }
     try { video.pause(); } catch {}
     video.muted = true;
     video.autoplay = false;
     video.dataset.xvg = "blocked";
-    const box = containerOf(video);
     if (!box) return;
     box.classList.add("xvg-blocked");
     if (getComputedStyle(box).position === "static") box.style.position = "relative";
@@ -126,41 +137,74 @@
       const stop = (e) => { e.stopPropagation(); if (e.type === "click") e.preventDefault(); };
       ["click", "pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "mouseup"]
         .forEach((t) => ov.addEventListener(t, stop));
+      let lastOpen = 0;
       ov.querySelector(".xvg-btn").addEventListener("click", (e) => {
         stop(e);
-        openSingle(video);
+        // A double tap opens one tab, not two.
+        if (Date.now() - lastOpen < 1500) return;
+        // X may have swapped the <video> element since this overlay was made.
+        const current = box.querySelector("video");
+        if (current && openSingle(current)) { lastOpen = Date.now(); return; }
+        ov.dataset.xvgNote = "1";
+        setText(ov.querySelector(".xvg-msg"), "Can't open this one in a new tab");
       });
       box.appendChild(ov);
     }
+    if (ov.dataset.xvgNote) {
+      // Keep the "can't open" notice only while there is still nothing to open.
+      const openable = (rec && (rec.variants.length || rec.tweetId)) || tweetIdFromArticle(video.closest("article"));
+      if (!openable) return;
+      delete ov.dataset.xvgNote;
+    }
     const who = rec && rec.screenName ? "@" + rec.screenName : "an account you don't follow";
-    ov.querySelector(".xvg-msg").textContent =
-      rec ? `Video from ${who} — not followed` : "Video blocked (account not verified as followed)";
+    setText(ov.querySelector(".xvg-msg"),
+      rec ? `Video from ${who} — not followed` : "Video blocked (account not verified as followed)");
+  }
+
+  // Writing the same text again would still count as a DOM change and
+  // re-trigger the scan on every frame.
+  function setText(el, text) {
+    if (el.dataset.xvgText === text) return;
+    el.dataset.xvgText = text;
+    el.textContent = text;
   }
 
   function unblock(video) {
-    if (video.dataset.xvg !== "blocked") { video.dataset.xvg = "ok"; return; }
+    const was = before.get(video);
+    if (was) {
+      video.muted = was.muted;
+      video.autoplay = was.autoplay;
+      before.delete(video);
+    }
     video.dataset.xvg = "ok";
     const box = containerOf(video);
     if (!box) return;
+    // Another video sharing this box may still be blocked: leave its cover.
+    if (box.querySelector('video[data-xvg="blocked"]')) return;
+    if (was) box.style.position = was.boxPosition;
     box.classList.remove("xvg-blocked");
     const ov = box.querySelector(":scope > .xvg-overlay");
     if (ov) ov.remove();
   }
 
+  // Returns false when there is nothing to open (no direct file, no post id).
   function openSingle(video) {
     const rec = recordFor(video);
     const tweetId = (rec && rec.tweetId) || tweetIdFromArticle(video.closest("article"));
+    const variants = (rec && rec.variants) || [];
+    if (!variants.length && !tweetId) return false;
     chrome.runtime.sendMessage({
       type: "xvg:open",
       payload: {
         tweetId,
         screenName: rec && rec.screenName,
         text: rec && rec.text,
-        variants: (rec && rec.variants) || [],
+        variants,
         poster: video.getAttribute("poster") || "",
         kind: rec && rec.kind,
       },
     });
+    return true;
   }
 
   // ---- scanning ----
@@ -172,13 +216,25 @@
 
   function scan() {
     document.querySelectorAll("video").forEach(process);
+    // Overlays whose video X has since removed.
+    document.querySelectorAll(".xvg-overlay").forEach((ov) => {
+      const box = ov.parentElement;
+      if (box && !box.querySelector("video")) {
+        ov.remove();
+        box.classList.remove("xvg-blocked");
+      }
+    });
   }
 
   let pending = false;
   function schedule() {
     if (pending) return;
     pending = true;
-    requestAnimationFrame(() => { pending = false; scan(); });
+    const run = () => { if (!pending) return; pending = false; scan(); };
+    // Whichever comes first. A hidden tab gets no animation frames, and a
+    // tab can be hidden after the frame was requested, so the timer backs it up.
+    requestAnimationFrame(run);
+    setTimeout(run, 250);
   }
 
   // Hard stop: any play attempt on a non-allowed video is cancelled immediately.

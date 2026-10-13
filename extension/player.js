@@ -37,13 +37,21 @@
     v.src = p.variants[0].url;
     v.play().catch(() => {});
 
+    // Position and play state to carry across a quality switch. Kept outside
+    // the handler so a second switch before the first has loaded still
+    // resumes from the right place.
+    let resume = null;
+    v.addEventListener("loadedmetadata", () => {
+      if (!resume) return;
+      const r = resume;
+      resume = null;
+      v.currentTime = r.t;
+      if (r.playing) v.play().catch(() => {});
+    });
     sel.onchange = () => {
-      const t = v.currentTime, playing = !v.paused;
+      if (!resume) resume = { t: v.currentTime, playing: !v.paused && !v.ended };
+      v.autoplay = false;
       v.src = sel.value;
-      v.addEventListener("loadedmetadata", () => {
-        v.currentTime = t;
-        if (playing) v.play().catch(() => {});
-      }, { once: true });
     };
   });
 })();

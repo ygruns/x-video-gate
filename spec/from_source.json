@@ -1,0 +1,5117 @@
+{
+ "extension_version": "1.3.0 (third pass)",
+ "components": [
+  {
+   "name": "Settings popup (popup.html + popup.js)",
+   "state_variables": [
+    {
+     "name": "view (#form.hidden / #gate.hidden)",
+     "where": "DOM",
+     "values": [
+      "form",
+      "gate"
+     ],
+     "source": "popup.js:46-50; popup.html:19,31,40"
+    },
+    {
+     "name": "current (popup's copy of stored settings: set at load, re-read from storage inside every Save, set after a successful commit)",
+     "where": "JS variable",
+     "values": [
+      "DEFAULTS until load",
+      "stored settings"
+     ],
+     "source": "popup.js:5,10,40,107"
+    },
+    {
+     "name": "#save.disabled (load pending)",
+     "where": "DOM",
+     "values": [
+      "true until load callback",
+      "false"
+     ],
+     "source": "popup.html:37; popup.js:12"
+    },
+    {
+     "name": "savePending (Save's storage.get issued, callback not yet run)",
+     "where": "JS variable",
+     "values": [
+      "0..n"
+     ],
+     "source": "popup.js:106"
+    },
+    {
+     "name": "shownAt / fresh() (600 ms dead time)",
+     "where": "JS variable",
+     "values": [
+      "-1e9 initially",
+      "timestamp"
+     ],
+     "source": "popup.js:7,49,54-56,93"
+    },
+    {
+     "name": "timer (setInterval handle; NOT cleared by gate())",
+     "where": "timer",
+     "values": [
+      "null",
+      "interval id (250 ms)"
+     ],
+     "source": "popup.js:6,59-60,85-86,97"
+    },
+    {
+     "name": "#enabled.checked",
+     "where": "DOM",
+     "values": [
+      "true",
+      "false (HTML default before load)"
+     ],
+     "source": "popup.html:32; popup.js:16,25"
+    },
+    {
+     "name": "#allowlist.value",
+     "where": "DOM",
+     "values": [
+      "free text"
+     ],
+     "source": "popup.html:35; popup.js:17,21"
+    },
+    {
+     "name": "#gate.classList 'last' (CSS order swap)",
+     "where": "DOM",
+     "values": [
+      "absent",
+      "present"
+     ],
+     "source": "popup.js:70,92; popup.html:22-24"
+    },
+    {
+     "name": "#gate-title.textContent",
+     "where": "DOM",
+     "values": [
+      "''",
+      "Are you sure?",
+      "Wait",
+      "Really sure?"
+     ],
+     "source": "popup.js:72,80,87"
+    },
+    {
+     "name": "#gate-msg.textContent (set once per gate(), unchanged through stages 2 and 3)",
+     "where": "DOM",
+     "values": [
+      "''",
+      "This will ..."
+     ],
+     "source": "popup.js:73; popup.html:20"
+    },
+    {
+     "name": "#gate-yes.textContent",
+     "where": "DOM",
+     "values": [
+      "''",
+      "Yes, continue",
+      "Wait Ns",
+      "Yes, do it"
+     ],
+     "source": "popup.js:74,84,88"
+    },
+    {
+     "name": "#gate-yes.disabled",
+     "where": "DOM",
+     "values": [
+      "false",
+      "true"
+     ],
+     "source": "popup.js:75,81,89"
+    },
+    {
+     "name": "#gate-yes.onclick",
+     "where": "DOM",
+     "values": [
+      "null",
+      "stage-1 closure",
+      "stage-3 closure (commit(next))"
+     ],
+     "source": "popup.js:76,94"
+    },
+    {
+     "name": "closure variables next / what / end",
+     "where": "JS variable",
+     "values": [
+      "next+what captured in Save's get callback; end at stage-1 click"
+     ],
+     "source": "popup.js:67,79,108-109"
+    },
+    {
+     "name": "#saved.style.visibility",
+     "where": "DOM",
+     "values": [
+      "hidden",
+      "visible"
+     ],
+     "source": "popup.html:18; popup.js:41-42"
+    },
+    {
+     "name": "pending hide timeouts for #saved (untracked)",
+     "where": "timer",
+     "values": [
+      "0..n"
+     ],
+     "source": "popup.js:42"
+    },
+    {
+     "name": "commitPending (storage.set issued, callback not yet run)",
+     "where": "JS variable",
+     "values": [
+      "0..n"
+     ],
+     "source": "popup.js:38"
+    },
+    {
+     "name": "settings",
+     "where": "chrome.storage",
+     "values": [
+      "absent",
+      "{enabled, allowlist}"
+     ],
+     "source": "popup.js:9,38,106"
+    }
+   ],
+   "states": [
+    {
+     "id": "F",
+     "label": "Form shown",
+     "definition": {
+      "view": "form",
+      "timer": "null"
+     }
+    },
+    {
+     "id": "G1",
+     "label": "Gate stage 1: 'Are you sure?'",
+     "definition": {
+      "view": "gate",
+      "gate.last": "absent",
+      "gate-yes.disabled": "false",
+      "gate-yes.onclick": "stage-1",
+      "timer": "null"
+     }
+    },
+    {
+     "id": "G2",
+     "label": "Gate stage 2: forced wait",
+     "definition": {
+      "view": "gate",
+      "gate.last": "absent",
+      "gate-yes.disabled": "true",
+      "timer": "interval id"
+     }
+    },
+    {
+     "id": "G3",
+     "label": "Gate stage 3: 'Really sure?' (buttons swapped)",
+     "definition": {
+      "view": "gate",
+      "gate.last": "present",
+      "gate-yes.disabled": "false",
+      "gate-yes.onclick": "stage-3",
+      "timer": "null"
+     }
+    },
+    {
+     "id": "X",
+     "label": "Popup closed",
+     "definition": {
+      "view": "none"
+     }
+    }
+   ],
+   "initial": "F",
+   "events": [
+    {
+     "id": "E1",
+     "label": "initial storage.get callback",
+     "kind": "storage"
+    },
+    {
+     "id": "E2",
+     "label": "user edits checkbox or textarea",
+     "kind": "user"
+    },
+    {
+     "id": "E3",
+     "label": "user clicks Save",
+     "kind": "user"
+    },
+    {
+     "id": "E11",
+     "label": "Save's storage.get callback (decision point)",
+     "kind": "storage"
+    },
+    {
+     "id": "E4",
+     "label": "user clicks 'Keep blocking'",
+     "kind": "user"
+    },
+    {
+     "id": "E5",
+     "label": "user clicks #gate-yes",
+     "kind": "user"
+    },
+    {
+     "id": "E6",
+     "label": "250 ms interval tick",
+     "kind": "timer"
+    },
+    {
+     "id": "E7",
+     "label": "storage.set callback",
+     "kind": "storage"
+    },
+    {
+     "id": "E8",
+     "label": "2000 ms 'Saved' hide timeout",
+     "kind": "timer"
+    },
+    {
+     "id": "E9",
+     "label": "popup closed / unloaded",
+     "kind": "browser"
+    },
+    {
+     "id": "E10",
+     "label": "settings changed in storage by another context",
+     "kind": "storage"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "F",
+     "event": "E1",
+     "to": "F",
+     "guard": "load pending",
+     "side_effects": [
+      "current = stored merged over DEFAULTS",
+      "fill(current) (overwrites anything typed earlier)",
+      "#save.disabled=false"
+     ],
+     "source": "popup.js:9-13"
+    },
+    {
+     "from": "G1",
+     "event": "E1",
+     "to": "G1",
+     "guard": "unreachable: runs once, before Save can be used",
+     "side_effects": [],
+     "source": "popup.js:9-13; popup.html:37"
+    },
+    {
+     "from": "G2",
+     "event": "E1",
+     "to": "G2",
+     "guard": "unreachable (as G1)",
+     "side_effects": [],
+     "source": "popup.js:9-13"
+    },
+    {
+     "from": "G3",
+     "event": "E1",
+     "to": "G3",
+     "guard": "unreachable (as G1)",
+     "side_effects": [],
+     "source": "popup.js:9-13"
+    },
+    {
+     "from": "X",
+     "event": "E1",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "callback never runs"
+     ],
+     "source": "popup.js:9"
+    },
+    {
+     "from": "F",
+     "event": "E2",
+     "to": "F",
+     "guard": "",
+     "side_effects": [
+      "form controls only; no listeners; not subject to fresh(). An edit made between a Save click and its callback IS included in that save (form read in the callback)"
+     ],
+     "source": "popup.js:20-26,108"
+    },
+    {
+     "from": "G1",
+     "event": "E2",
+     "to": "G1",
+     "guard": "unreachable: form hidden",
+     "side_effects": [],
+     "source": "popup.js:47; popup.html:19"
+    },
+    {
+     "from": "G2",
+     "event": "E2",
+     "to": "G2",
+     "guard": "unreachable: form hidden",
+     "side_effects": [],
+     "source": "popup.js:47; popup.html:19"
+    },
+    {
+     "from": "G3",
+     "event": "E2",
+     "to": "G3",
+     "guard": "unreachable: form hidden",
+     "side_effects": [],
+     "source": "popup.js:47; popup.html:19"
+    },
+    {
+     "from": "X",
+     "event": "E2",
+     "to": "X",
+     "guard": "unreachable",
+     "side_effects": [],
+     "source": "popup.js:1"
+    },
+    {
+     "from": "F",
+     "event": "E3",
+     "to": "F",
+     "guard": "#save disabled (load pending)",
+     "side_effects": [],
+     "source": "popup.html:37; popup.js:12"
+    },
+    {
+     "from": "F",
+     "event": "E3",
+     "to": "F",
+     "guard": "fresh()",
+     "side_effects": [
+      "ignored silently"
+     ],
+     "source": "popup.js:104"
+    },
+    {
+     "from": "F",
+     "event": "E3",
+     "to": "F",
+     "guard": "not fresh",
+     "side_effects": [
+      "chrome.storage.local.get('settings') issued; savePending++",
+      "nothing else changes yet (view, shownAt, current untouched)"
+     ],
+     "source": "popup.js:103-106"
+    },
+    {
+     "from": "G1",
+     "event": "E3",
+     "to": "G1",
+     "guard": "unreachable: Save hidden",
+     "side_effects": [],
+     "source": "popup.js:47"
+    },
+    {
+     "from": "G2",
+     "event": "E3",
+     "to": "G2",
+     "guard": "unreachable: Save hidden",
+     "side_effects": [],
+     "source": "popup.js:47"
+    },
+    {
+     "from": "G3",
+     "event": "E3",
+     "to": "G3",
+     "guard": "unreachable: Save hidden",
+     "side_effects": [],
+     "source": "popup.js:47"
+    },
+    {
+     "from": "X",
+     "event": "E3",
+     "to": "X",
+     "guard": "unreachable",
+     "side_effects": [],
+     "source": "popup.js:103"
+    },
+    {
+     "from": "F",
+     "event": "E11",
+     "to": "F",
+     "guard": "loosenings(readForm()) empty against freshly read storage",
+     "side_effects": [
+      "current = stored",
+      "commit(next): storage.set issued, commitPending++"
+     ],
+     "source": "popup.js:106-111,37-44"
+    },
+    {
+     "from": "F",
+     "event": "E11",
+     "to": "G1",
+     "guard": "loosenings non-empty",
+     "side_effects": [
+      "current = stored",
+      "show('gate'): shownAt=now",
+      "'last' removed; title, message, yes text/enabled/stage-1 onclick set",
+      "nothing written"
+     ],
+     "source": "popup.js:106-110,67-76"
+    },
+    {
+     "from": "G1",
+     "event": "E11",
+     "to": "G1",
+     "guard": "a second Save click was made before the first callback ran",
+     "side_effects": [
+      "current re-read; gate() runs again: same G1 UI rebuilt with the same next/what, shownAt pushed later"
+     ],
+     "source": "popup.js:106-110,67-76"
+    },
+    {
+     "from": "G2",
+     "event": "E11",
+     "to": "G1",
+     "guard": "second callback arrives after stage-1 yes was pressed (callback >600 ms late)",
+     "side_effects": [
+      "gate() rebuilds the stage-1 UI but the running interval is NOT cleared: the old tick keeps overwriting the yes label and after the original 15 s turns the UI into stage 3 for the old closure",
+      "if the user presses the new stage-1 yes meanwhile, `timer` is overwritten; the old tick later clears the NEW interval and itself keeps firing forever, resetting shownAt every 250 ms so that every button stays 'fresh' (popup unusable until closed)"
+     ],
+     "source": "popup.js:67-99,106-110"
+    },
+    {
+     "from": "G3",
+     "event": "E11",
+     "to": "G1",
+     "guard": "second callback arrives during stage 3 (>15 s late)",
+     "side_effects": [
+      "gate() resets to stage 1; the wait must be redone"
+     ],
+     "source": "popup.js:67-76,106-110"
+    },
+    {
+     "from": "X",
+     "event": "E11",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "callback does not run; nothing stored"
+     ],
+     "source": "popup.js:106"
+    },
+    {
+     "from": "F",
+     "event": "E4",
+     "to": "F",
+     "guard": "unreachable (gate hidden)",
+     "side_effects": [],
+     "source": "popup.js:101"
+    },
+    {
+     "from": "G1",
+     "event": "E4",
+     "to": "G1",
+     "guard": "fresh()",
+     "side_effects": [
+      "ignored silently"
+     ],
+     "source": "popup.js:101"
+    },
+    {
+     "from": "G1",
+     "event": "E4",
+     "to": "F",
+     "guard": "not fresh",
+     "side_effects": [
+      "clearInterval(null); timer=null",
+      "fill(current) (= storage as read at Save): all edits discarded",
+      "show('form'): Save dead 600 ms"
+     ],
+     "source": "popup.js:101,58-63"
+    },
+    {
+     "from": "G2",
+     "event": "E4",
+     "to": "F",
+     "guard": "(fresh() cannot be true in G2)",
+     "side_effects": [
+      "interval cleared",
+      "fill(current)",
+      "show('form')",
+      "hidden yes left disabled with 'Wait Ns'"
+     ],
+     "source": "popup.js:101,58-63"
+    },
+    {
+     "from": "G3",
+     "event": "E4",
+     "to": "G3",
+     "guard": "fresh() (first 600 ms of stage 3)",
+     "side_effects": [
+      "ignored silently"
+     ],
+     "source": "popup.js:101,93"
+    },
+    {
+     "from": "G3",
+     "event": "E4",
+     "to": "F",
+     "guard": "not fresh",
+     "side_effects": [
+      "fill(current)",
+      "show('form')",
+      "left on hidden gate: class 'last', enabled yes with stage-3 commit closure"
+     ],
+     "source": "popup.js:101,58-63,92,94"
+    },
+    {
+     "from": "X",
+     "event": "E4",
+     "to": "X",
+     "guard": "unreachable",
+     "side_effects": [],
+     "source": "popup.js:101"
+    },
+    {
+     "from": "F",
+     "event": "E5",
+     "to": "F",
+     "guard": "unreachable (gate hidden)",
+     "side_effects": [],
+     "source": "popup.js:76,94"
+    },
+    {
+     "from": "G1",
+     "event": "E5",
+     "to": "G1",
+     "guard": "fresh()",
+     "side_effects": [
+      "ignored silently"
+     ],
+     "source": "popup.js:77"
+    },
+    {
+     "from": "G1",
+     "event": "E5",
+     "to": "G2",
+     "guard": "not fresh",
+     "side_effects": [
+      "end = performance.now()+15000",
+      "title='Wait' (message unchanged)",
+      "yes.disabled=true",
+      "tick() once: 'Wait 15s'",
+      "timer=setInterval(tick,250)"
+     ],
+     "source": "popup.js:76-97"
+    },
+    {
+     "from": "G2",
+     "event": "E5",
+     "to": "G2",
+     "guard": "disabled: click not dispatched",
+     "side_effects": [],
+     "source": "popup.js:81"
+    },
+    {
+     "from": "G3",
+     "event": "E5",
+     "to": "G3",
+     "guard": "fresh()",
+     "side_effects": [
+      "ignored silently"
+     ],
+     "source": "popup.js:94"
+    },
+    {
+     "from": "G3",
+     "event": "E5",
+     "to": "F",
+     "guard": "not fresh",
+     "side_effects": [
+      "commit(next): storage.set issued (current unchanged until its callback succeeds)",
+      "show('form'): Save dead 600 ms; form shows the edited values"
+     ],
+     "source": "popup.js:94,37-44"
+    },
+    {
+     "from": "X",
+     "event": "E5",
+     "to": "X",
+     "guard": "unreachable",
+     "side_effects": [],
+     "source": "popup.js:76"
+    },
+    {
+     "from": "F",
+     "event": "E6",
+     "to": "F",
+     "guard": "no interval in F (normal flow)",
+     "side_effects": [],
+     "source": "popup.js:59,85"
+    },
+    {
+     "from": "G1",
+     "event": "E6",
+     "to": "G1",
+     "guard": "no interval in G1 (normal flow; see G2/E11 for the leaked-interval case)",
+     "side_effects": [],
+     "source": "popup.js:97"
+    },
+    {
+     "from": "G2",
+     "event": "E6",
+     "to": "G2",
+     "guard": "time left > 0",
+     "side_effects": [
+      "yes label 'Wait Ns'"
+     ],
+     "source": "popup.js:82-84"
+    },
+    {
+     "from": "G2",
+     "event": "E6",
+     "to": "G3",
+     "guard": "time left <= 0",
+     "side_effects": [
+      "interval cleared; timer=null",
+      "title='Really sure?'; yes label 'Yes, do it', enabled",
+      "class 'last' added (yes ordered above no)",
+      "shownAt=now",
+      "yes.onclick = stage-3 closure",
+      "message untouched"
+     ],
+     "source": "popup.js:82-95; popup.html:22-24"
+    },
+    {
+     "from": "G3",
+     "event": "E6",
+     "to": "G3",
+     "guard": "no interval in G3",
+     "side_effects": [],
+     "source": "popup.js:85-86"
+    },
+    {
+     "from": "X",
+     "event": "E6",
+     "to": "X",
+     "guard": "interval destroyed",
+     "side_effects": [],
+     "source": "popup.js:97"
+    },
+    {
+     "from": "F",
+     "event": "E7",
+     "to": "F",
+     "guard": "commitPending>0",
+     "side_effects": [
+      "if chrome.runtime.lastError: return, nothing shown, current unchanged",
+      "else current = next; #saved visible; setTimeout(hide, 2000)"
+     ],
+     "source": "popup.js:38-43"
+    },
+    {
+     "from": "G1",
+     "event": "E7",
+     "to": "G1",
+     "guard": "commitPending>0 (only via overlapping Save callbacks)",
+     "side_effects": [
+      "if chrome.runtime.lastError: return, nothing shown, current unchanged",
+      "else current = next; #saved visible; setTimeout(hide, 2000)"
+     ],
+     "source": "popup.js:38-43"
+    },
+    {
+     "from": "G2",
+     "event": "E7",
+     "to": "G2",
+     "guard": "commitPending>0 (only via overlapping Save callbacks)",
+     "side_effects": [
+      "if chrome.runtime.lastError: return, nothing shown, current unchanged",
+      "else current = next; #saved visible; setTimeout(hide, 2000)"
+     ],
+     "source": "popup.js:38-43"
+    },
+    {
+     "from": "G3",
+     "event": "E7",
+     "to": "G3",
+     "guard": "commitPending>0 (only via overlapping Save callbacks)",
+     "side_effects": [
+      "if chrome.runtime.lastError: return, nothing shown, current unchanged",
+      "else current = next; #saved visible; setTimeout(hide, 2000)"
+     ],
+     "source": "popup.js:38-43"
+    },
+    {
+     "from": "X",
+     "event": "E7",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "callback does not run; completion of the issued write is browser behaviour"
+     ],
+     "source": "popup.js:38"
+    },
+    {
+     "from": "F",
+     "event": "E8",
+     "to": "F",
+     "guard": "a hide timeout is pending",
+     "side_effects": [
+      "#saved hidden regardless of newer commits"
+     ],
+     "source": "popup.js:42"
+    },
+    {
+     "from": "G1",
+     "event": "E8",
+     "to": "G1",
+     "guard": "a hide timeout is pending",
+     "side_effects": [
+      "#saved hidden regardless of newer commits"
+     ],
+     "source": "popup.js:42"
+    },
+    {
+     "from": "G2",
+     "event": "E8",
+     "to": "G2",
+     "guard": "a hide timeout is pending",
+     "side_effects": [
+      "#saved hidden regardless of newer commits"
+     ],
+     "source": "popup.js:42"
+    },
+    {
+     "from": "G3",
+     "event": "E8",
+     "to": "G3",
+     "guard": "a hide timeout is pending",
+     "side_effects": [
+      "#saved hidden regardless of newer commits"
+     ],
+     "source": "popup.js:42"
+    },
+    {
+     "from": "X",
+     "event": "E8",
+     "to": "X",
+     "guard": "",
+     "side_effects": [],
+     "source": "popup.js:42"
+    },
+    {
+     "from": "F",
+     "event": "E9",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "JS state, timers, unsaved edits lost; no gate progress persisted; a pending Save read does nothing"
+     ],
+     "source": "popup.js:5-7,65-66"
+    },
+    {
+     "from": "G1",
+     "event": "E9",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "JS state, timers, unsaved edits lost; no gate progress persisted; a pending Save read does nothing"
+     ],
+     "source": "popup.js:5-7,65-66"
+    },
+    {
+     "from": "G2",
+     "event": "E9",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "JS state, timers, unsaved edits lost; no gate progress persisted; a pending Save read does nothing"
+     ],
+     "source": "popup.js:5-7,65-66"
+    },
+    {
+     "from": "G3",
+     "event": "E9",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "JS state, timers, unsaved edits lost; no gate progress persisted; a pending Save read does nothing"
+     ],
+     "source": "popup.js:5-7,65-66"
+    },
+    {
+     "from": "X",
+     "event": "E9",
+     "to": "X",
+     "guard": "",
+     "side_effects": [],
+     "source": "popup.js:1"
+    },
+    {
+     "from": "F",
+     "event": "E10",
+     "to": "F",
+     "guard": "",
+     "side_effects": [
+      "no onChanged listener: form and `current` not refreshed; the next Save re-reads storage for its decision, but a `next` already inside the gate is committed as captured"
+     ],
+     "source": "popup.js:94,106-107"
+    },
+    {
+     "from": "G1",
+     "event": "E10",
+     "to": "G1",
+     "guard": "",
+     "side_effects": [
+      "no onChanged listener: form and `current` not refreshed; the next Save re-reads storage for its decision, but a `next` already inside the gate is committed as captured"
+     ],
+     "source": "popup.js:94,106-107"
+    },
+    {
+     "from": "G2",
+     "event": "E10",
+     "to": "G2",
+     "guard": "",
+     "side_effects": [
+      "no onChanged listener: form and `current` not refreshed; the next Save re-reads storage for its decision, but a `next` already inside the gate is committed as captured"
+     ],
+     "source": "popup.js:94,106-107"
+    },
+    {
+     "from": "G3",
+     "event": "E10",
+     "to": "G3",
+     "guard": "",
+     "side_effects": [
+      "no onChanged listener: form and `current` not refreshed; the next Save re-reads storage for its decision, but a `next` already inside the gate is committed as captured"
+     ],
+     "source": "popup.js:94,106-107"
+    },
+    {
+     "from": "X",
+     "event": "E10",
+     "to": "X",
+     "guard": "",
+     "side_effects": [
+      "no onChanged listener: form and `current` not refreshed; the next Save re-reads storage for its decision, but a `next` already inside the gate is committed as captured"
+     ],
+     "source": "popup.js:94,106-107"
+    }
+   ],
+   "notes": [
+    "Save is now two steps: the click only issues chrome.storage.local.get (if not fresh); the decision (gate vs commit), the read of the form and the update of `current` happen in the callback (popup.js:103-113). Between the two the view is unchanged and nothing prevents another Save click.",
+    "gate() does not clear an existing interval and can be entered from the callback in any state (popup.js:67-75). Reaching it in G2 needs a second Save callback arriving after the user already pressed stage-1 yes (>600 ms late) - implausible with chrome.storage but not excluded by the code.",
+    "The gate message is written once in gate() and not touched in stage 2/3, so its height is constant; only the one-line title and the button label change. With class 'last' the yes button (1px border, so 2px taller) is ordered before 'Keep blocking'; the spot of the former yes button is covered by 'Keep blocking' except a 2px strip at its top that falls in the margin between the buttons (popup.html:16,22-26). Derived from the CSS, not rendered.",
+    "fresh(): 600 ms after show('form'), show('gate') and stage-3 appearance; affects Save, 'Keep blocking' and both yes handlers only. Not reset on G1->G2. Not active on first opening (shownAt=-1e9).",
+    "The wait uses performance.now(). Behaviour across device sleep, and whether a popup can be hidden without being destroyed, is browser-dependent.",
+    "commit() only updates `current` and shows 'Saved' if chrome.runtime.lastError is unset; on failure nothing is shown at all (popup.js:39).",
+    "If either storage.get callback receives undefined (storage error) `r.settings` throws: Save stays disabled (load) or the click silently does nothing (Save) (popup.js:9-13,106-107).",
+    "Hidden controls are display:none and unreachable; stale handlers stay attached."
+   ]
+  },
+  {
+   "name": "One <video> element on an X page (content.js per-element gate)",
+   "state_variables": [
+    {
+     "name": "video.dataset.xvg",
+     "where": "DOM",
+     "values": [
+      "unset",
+      "blocked",
+      "ok"
+     ],
+     "source": "content.js:119,170"
+    },
+    {
+     "name": "before.get(video) snapshot {muted, autoplay, boxPosition}",
+     "where": "JS variable",
+     "values": [
+      "absent",
+      "present"
+     ],
+     "source": "content.js:109,113-115,164-169"
+    },
+    {
+     "name": "video.paused (forced; never resumed)",
+     "where": "video element property",
+     "values": [
+      "page-controlled",
+      "true after block"
+     ],
+     "source": "content.js:116,236"
+    },
+    {
+     "name": "video.muted",
+     "where": "video element property",
+     "values": [
+      "page-controlled",
+      "true while blocked",
+      "snapshot value after unblock"
+     ],
+     "source": "content.js:117,166"
+    },
+    {
+     "name": "video.autoplay",
+     "where": "video element property",
+     "values": [
+      "page-controlled",
+      "false while blocked",
+      "snapshot value after unblock"
+     ],
+     "source": "content.js:118,167"
+    },
+    {
+     "name": "box = containerOf(video)",
+     "where": "DOM",
+     "values": [
+      "videoPlayer",
+      "videoComponent",
+      "parentElement",
+      "null"
+     ],
+     "source": "content.js:101-105,112,142,171"
+    },
+    {
+     "name": "box.classList 'xvg-blocked'",
+     "where": "DOM",
+     "values": [
+      "absent",
+      "present"
+     ],
+     "source": "content.js:121,176,215; content.css:1"
+    },
+    {
+     "name": "box.style.position inline",
+     "where": "DOM",
+     "values": [
+      "original",
+      "relative while blocked",
+      "snapshot value after unblock",
+      "left 'relative' after sweep or shared-box early return"
+     ],
+     "source": "content.js:122,174-175,211-217"
+    },
+    {
+     "name": "overlay div.xvg-overlay (7 stop listeners + button closure over box and its own lastOpen)",
+     "where": "DOM",
+     "values": [
+      "absent",
+      "present"
+     ],
+     "source": "content.js:124-148,177-178,211-217"
+    },
+    {
+     "name": "lastOpen (per overlay, Date.now() of last accepted open)",
+     "where": "JS variable",
+     "values": [
+      "0",
+      "timestamp"
+     ],
+     "source": "content.js:136,140,143"
+    },
+    {
+     "name": "ov.dataset.xvgNote (sticky 'can't open' flag; never cleared)",
+     "where": "DOM",
+     "values": [
+      "unset",
+      "1"
+     ],
+     "source": "content.js:144,149"
+    },
+    {
+     "name": ".xvg-msg textContent / data-xvg-text",
+     "where": "DOM",
+     "values": [
+      "Video from @name - not followed",
+      "Video from an account you don't follow - not followed",
+      "Video blocked (account not verified as followed)",
+      "Can't open this one in a new tab"
+     ],
+     "source": "content.js:145,150-152,157-161"
+    },
+    {
+     "name": "rec / isAllowed (derived)",
+     "where": "JS variable",
+     "values": [
+      "..."
+     ],
+     "source": "content.js:55-71,84-98"
+    }
+   ],
+   "states": [
+    {
+     "id": "V0",
+     "label": "Unseen",
+     "definition": {
+      "dataset.xvg": "unset",
+      "before": "absent",
+      "overlay": "absent"
+     }
+    },
+    {
+     "id": "V1",
+     "label": "Blocked",
+     "definition": {
+      "dataset.xvg": "blocked",
+      "before": "present",
+      "overlay": "present",
+      "paused": "true",
+      "muted": "true",
+      "autoplay": "false"
+     }
+    },
+    {
+     "id": "V1n",
+     "label": "Blocked, overlay showing the sticky 'can't open' notice",
+     "definition": {
+      "dataset.xvg": "blocked",
+      "overlay": "present",
+      "xvgNote": "1",
+      "message": "Can't open this one in a new tab"
+     }
+    },
+    {
+     "id": "V2",
+     "label": "Allowed, never blocked",
+     "definition": {
+      "dataset.xvg": "ok",
+      "before": "absent",
+      "overlay": "absent"
+     }
+    },
+    {
+     "id": "V3",
+     "label": "Allowed after having been blocked",
+     "definition": {
+      "dataset.xvg": "ok",
+      "before": "absent",
+      "overlay": "absent",
+      "muted/autoplay/box position": "snapshot values",
+      "paused": "true (not resumed)"
+     }
+    },
+    {
+     "id": "V4",
+     "label": "Unprocessed element in a box that still carries an overlay from another element",
+     "definition": {
+      "dataset.xvg": "unset",
+      "overlay": "present (inherited, incl. its note flag and lastOpen)"
+     }
+    },
+    {
+     "id": "V5",
+     "label": "Detached from document",
+     "definition": {
+      "dataset.xvg": "as before",
+      "before": "kept if blocked"
+     }
+    }
+   ],
+   "initial": "V0",
+   "events": [
+    {
+     "id": "Ev1",
+     "label": "scan() processes the video, isAllowed false",
+     "kind": "page"
+    },
+    {
+     "id": "Ev2",
+     "label": "scan() processes the video, isAllowed true",
+     "kind": "page"
+    },
+    {
+     "id": "Ev3",
+     "label": "play/playing/loadeddata (capture) and isAllowed false",
+     "kind": "page"
+    },
+    {
+     "id": "Ev4",
+     "label": "play/playing/loadeddata and isAllowed true",
+     "kind": "page"
+    },
+    {
+     "id": "Ev5",
+     "label": "user clicks/taps overlay background",
+     "kind": "user"
+    },
+    {
+     "id": "Ev6",
+     "label": "user clicks 'Play in new tab'",
+     "kind": "user"
+    },
+    {
+     "id": "Ev7",
+     "label": "user clicks the video / X's controls",
+     "kind": "user"
+    },
+    {
+     "id": "Ev8",
+     "label": "page removes the video element",
+     "kind": "page"
+    },
+    {
+     "id": "Ev9",
+     "label": "page (re)inserts the video element",
+     "kind": "page"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "V0",
+     "event": "Ev1",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:202-206,111-153"
+    },
+    {
+     "from": "V2",
+     "event": "Ev1",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:202-206,111-153"
+    },
+    {
+     "from": "V3",
+     "event": "Ev1",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:202-206,111-153"
+    },
+    {
+     "from": "V1",
+     "event": "Ev1",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "pause(); same values rewritten; overlay reused; setText writes only if the text differs (record arrived)"
+     ],
+     "source": "content.js:111-153"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev1",
+     "to": "V1n",
+     "guard": "",
+     "side_effects": [
+      "pause(); same values rewritten; block() returns at the note check: message NOT updated even if a record has arrived"
+     ],
+     "source": "content.js:111-149"
+    },
+    {
+     "from": "V4",
+     "event": "Ev1",
+     "to": "V1",
+     "guard": "inherited overlay has no note flag (else V1n)",
+     "side_effects": [
+      "snapshot taken (boxPosition = whatever the previous element left, typically 'relative')",
+      "overlay reused with its existing lastOpen"
+     ],
+     "source": "content.js:113-115,124,149"
+    },
+    {
+     "from": "V5",
+     "event": "Ev1",
+     "to": "V5",
+     "guard": "detached elements are not visited",
+     "side_effects": [],
+     "source": "content.js:209"
+    },
+    {
+     "from": "V0",
+     "event": "Ev2",
+     "to": "V2",
+     "guard": "",
+     "side_effects": [
+      "dataset='ok'; class/overlay lookup finds nothing"
+     ],
+     "source": "content.js:163-179"
+    },
+    {
+     "from": "V1",
+     "event": "Ev2",
+     "to": "V3",
+     "guard": "",
+     "side_effects": [
+      "muted/autoplay restored; snapshot deleted; dataset='ok'",
+      "if no other blocked video in box: position restored, class and overlay removed",
+      "else (shared box): return early, cover stays, this video remains hidden",
+      "no play()"
+     ],
+     "source": "content.js:163-179"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev2",
+     "to": "V3",
+     "guard": "",
+     "side_effects": [
+      "as V1/Ev2; the note flag disappears with the overlay"
+     ],
+     "source": "content.js:163-179"
+    },
+    {
+     "from": "V2",
+     "event": "Ev2",
+     "to": "V2",
+     "guard": "",
+     "side_effects": [
+      "dataset rewritten; nothing else observable"
+     ],
+     "source": "content.js:163-179"
+    },
+    {
+     "from": "V3",
+     "event": "Ev2",
+     "to": "V3",
+     "guard": "",
+     "side_effects": [
+      "as V2/Ev2"
+     ],
+     "source": "content.js:163-179"
+    },
+    {
+     "from": "V4",
+     "event": "Ev2",
+     "to": "V2",
+     "guard": "no other blocked video in box",
+     "side_effects": [
+      "dataset='ok'; inherited class and overlay removed; leftover inline position not reset (no snapshot)"
+     ],
+     "source": "content.js:164,170-178"
+    },
+    {
+     "from": "V5",
+     "event": "Ev2",
+     "to": "V5",
+     "guard": "not processed",
+     "side_effects": [],
+     "source": "content.js:209"
+    },
+    {
+     "from": "V0",
+     "event": "Ev3",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "v.pause()",
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V2",
+     "event": "Ev3",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "v.pause()",
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V3",
+     "event": "Ev3",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "v.pause()",
+      "snapshot stored if none",
+      "pause(); muted=true; autoplay=false; dataset='blocked'",
+      "box class added; position 'relative' if computed static",
+      "overlay built (stop listeners, button, lastOpen=0) and appended",
+      "message set"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V1",
+     "event": "Ev3",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "v.pause(); block() as V1/Ev1"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev3",
+     "to": "V1n",
+     "guard": "",
+     "side_effects": [
+      "v.pause(); block() as V1n/Ev1"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V4",
+     "event": "Ev3",
+     "to": "V1",
+     "guard": "no note flag on inherited overlay (else V1n)",
+     "side_effects": [
+      "v.pause(); as V4/Ev1"
+     ],
+     "source": "content.js:231-242"
+    },
+    {
+     "from": "V5",
+     "event": "Ev3",
+     "to": "V5",
+     "guard": "event never reaches document",
+     "side_effects": [],
+     "source": "content.js:240-242"
+    },
+    {
+     "from": "V0",
+     "event": "Ev4",
+     "to": "V0",
+     "guard": "",
+     "side_effects": [
+      "nothing; dataset stays unset until a scan"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V1",
+     "event": "Ev4",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "nothing: guard does not unblock; plays hidden+muted until next scan"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev4",
+     "to": "V1n",
+     "guard": "",
+     "side_effects": [
+      "as V1"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V2",
+     "event": "Ev4",
+     "to": "V2",
+     "guard": "",
+     "side_effects": [
+      "nothing"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V3",
+     "event": "Ev4",
+     "to": "V3",
+     "guard": "",
+     "side_effects": [
+      "nothing by the extension"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V4",
+     "event": "Ev4",
+     "to": "V4",
+     "guard": "",
+     "side_effects": [
+      "nothing; hidden under inherited overlay until next scan"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V5",
+     "event": "Ev4",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [
+      "event never reaches document"
+     ],
+     "source": "content.js:231-239"
+    },
+    {
+     "from": "V0",
+     "event": "Ev5",
+     "to": "V0",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:124-148"
+    },
+    {
+     "from": "V0",
+     "event": "Ev6",
+     "to": "V0",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:137-146"
+    },
+    {
+     "from": "V2",
+     "event": "Ev5",
+     "to": "V2",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:124-148"
+    },
+    {
+     "from": "V2",
+     "event": "Ev6",
+     "to": "V2",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:137-146"
+    },
+    {
+     "from": "V3",
+     "event": "Ev5",
+     "to": "V3",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:124-148"
+    },
+    {
+     "from": "V3",
+     "event": "Ev6",
+     "to": "V3",
+     "guard": "unreachable: no overlay",
+     "side_effects": [],
+     "source": "content.js:137-146"
+    },
+    {
+     "from": "V1",
+     "event": "Ev5",
+     "to": "V1",
+     "guard": "",
+     "side_effects": [
+      "stopPropagation (7 types, bubble); preventDefault on click; no state change"
+     ],
+     "source": "content.js:133-135"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev5",
+     "to": "V1n",
+     "guard": "",
+     "side_effects": [
+      "stopPropagation (7 types, bubble); preventDefault on click; no state change"
+     ],
+     "source": "content.js:133-135"
+    },
+    {
+     "from": "V4",
+     "event": "Ev5",
+     "to": "V4",
+     "guard": "",
+     "side_effects": [
+      "stopPropagation (7 types, bubble); preventDefault on click; no state change"
+     ],
+     "source": "content.js:133-135"
+    },
+    {
+     "from": "V5",
+     "event": "Ev5",
+     "to": "V5",
+     "guard": "no overlay of its own (orphan on old box exists until next scan)",
+     "side_effects": [],
+     "source": "content.js:211-217"
+    },
+    {
+     "from": "V1",
+     "event": "Ev6",
+     "to": "V1",
+     "guard": "Date.now()-lastOpen < 1500 (this overlay)",
+     "side_effects": [
+      "stop(e) only"
+     ],
+     "source": "content.js:137-140"
+    },
+    {
+     "from": "V1",
+     "event": "Ev6",
+     "to": "V1",
+     "guard": "else, openSingle(current) true",
+     "side_effects": [
+      "sendMessage xvg:open; lastOpen=now; video stays blocked",
+      "if the extension context is invalid sendMessage throws: no tab, no note"
+     ],
+     "source": "content.js:142-143,182-199"
+    },
+    {
+     "from": "V1",
+     "event": "Ev6",
+     "to": "V1n",
+     "guard": "else (no video in box, or neither variants nor tweet id)",
+     "side_effects": [
+      "ov.dataset.xvgNote='1'",
+      "message 'Can't open this one in a new tab' (one mutation -> one scan; block() then leaves it alone)",
+      "lastOpen unchanged"
+     ],
+     "source": "content.js:144-145,149,186"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev6",
+     "to": "V1n",
+     "guard": "within 1500 ms of an accepted open",
+     "side_effects": [
+      "stop(e) only"
+     ],
+     "source": "content.js:140"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev6",
+     "to": "V1n",
+     "guard": "else, openSingle(current) now true (a record or status link has appeared)",
+     "side_effects": [
+      "tab opens, lastOpen=now, but the note flag and 'Can't open' text remain"
+     ],
+     "source": "content.js:143,149"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev6",
+     "to": "V1n",
+     "guard": "else",
+     "side_effects": [
+      "flag and text rewritten to the same values: no DOM change"
+     ],
+     "source": "content.js:144-145,158"
+    },
+    {
+     "from": "V4",
+     "event": "Ev6",
+     "to": "V4",
+     "guard": "",
+     "side_effects": [
+      "same guards as V1/Ev6, acting on the element now in the box; may set the note (then Ev1 leads to V1n)"
+     ],
+     "source": "content.js:137-146"
+    },
+    {
+     "from": "V5",
+     "event": "Ev6",
+     "to": "V5",
+     "guard": "orphan overlay before sweep: box has no video",
+     "side_effects": [
+      "note set, then the scan triggered by the text change sweeps the overlay"
+     ],
+     "source": "content.js:142-145,211-217"
+    },
+    {
+     "from": "V0",
+     "event": "Ev7",
+     "to": "V0",
+     "guard": "",
+     "side_effects": [
+      "no extension handler"
+     ],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V1",
+     "event": "Ev7",
+     "to": "V1",
+     "guard": "unreachable by pointer (covered, visibility hidden); page keyboard shortcuts lead to Ev3",
+     "side_effects": [],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev7",
+     "to": "V1n",
+     "guard": "unreachable by pointer",
+     "side_effects": [],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V2",
+     "event": "Ev7",
+     "to": "V2",
+     "guard": "",
+     "side_effects": [
+      "nothing by the extension"
+     ],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V3",
+     "event": "Ev7",
+     "to": "V3",
+     "guard": "",
+     "side_effects": [
+      "nothing by the extension; user must press play"
+     ],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V4",
+     "event": "Ev7",
+     "to": "V4",
+     "guard": "unreachable by pointer",
+     "side_effects": [],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V5",
+     "event": "Ev7",
+     "to": "V5",
+     "guard": "unreachable",
+     "side_effects": [],
+     "source": "content.css:1-8; content.js:231-242"
+    },
+    {
+     "from": "V0",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [
+      "mutation -> schedule"
+     ],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V1",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [
+      "next scan: overlay and class removed if the box has no <video> (inline position stays); otherwise the remaining/new element is processed"
+     ],
+     "source": "content.js:208-218"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [
+      "as V1/Ev8; if a replacement element stays in the box it inherits the sticky note"
+     ],
+     "source": "content.js:149,208-218"
+    },
+    {
+     "from": "V2",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V3",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V4",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [
+      "inherited overlay swept if no video remains"
+     ],
+     "source": "content.js:211-217"
+    },
+    {
+     "from": "V5",
+     "event": "Ev8",
+     "to": "V5",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:209"
+    },
+    {
+     "from": "V0",
+     "event": "Ev9",
+     "to": "V0",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V1",
+     "event": "Ev9",
+     "to": "V1",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V1n",
+     "event": "Ev9",
+     "to": "V1n",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V2",
+     "event": "Ev9",
+     "to": "V2",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V3",
+     "event": "Ev9",
+     "to": "V3",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V4",
+     "event": "Ev9",
+     "to": "V4",
+     "guard": "already attached: n/a",
+     "side_effects": [],
+     "source": "content.js:244-248"
+    },
+    {
+     "from": "V5",
+     "event": "Ev9",
+     "to": "V1",
+     "guard": "dataset was 'blocked' and still not allowed (else next scan -> V3/V2)",
+     "side_effects": [
+      "scan -> block(): old snapshot reused, overlay built in the current box"
+     ],
+     "source": "content.js:113,202-206"
+    }
+   ],
+   "notes": [
+    "unblock() restores muted, autoplay and box inline position from the snapshot; it does not record/restore play state and never calls play() (content.js:114,163-179).",
+    "Shared box: if after marking this video 'ok' the box still contains a video[data-xvg=blocked], unblock() returns before touching position, class or overlay (content.js:174). The allowed video then stays hidden under the sibling's cover (content.css:1), and its own snapshot's boxPosition is dropped.",
+    "The 'can't open' flag is set on the overlay and never removed: block() returns before writing the normal message for as long as that overlay node lives, even after a record arrives and the button would work (content.js:144,149). Only removal of the overlay (unblock or sweep) clears it.",
+    "lastOpen lives in the overlay's closure: a rebuilt overlay starts at 0. It is compared with Date.now() (wall clock).",
+    "The button acts on box.querySelector('video'): first video currently in the box of creation time (content.js:142).",
+    "Overlay listeners are bubble-phase for click, pointerdown/up, touchstart/end, mousedown/up; preventDefault only on click. Capture-phase page listeners, keydown, dblclick, auxclick, contextmenu, wheel are not intercepted (content.js:131-135).",
+    "The guard does not unblock and cannot see detached elements (content.js:231-242).",
+    "Scans in a hidden tab now run through setTimeout, unless an animation-frame scan was already pending when the tab was hidden (see scheduler component)."
+   ]
+  },
+  {
+   "name": "Content script page-level state and scan scheduler (content.js, one per top-level X document)",
+   "state_variables": [
+    {
+     "name": "pending",
+     "where": "JS variable",
+     "values": [
+      "false",
+      "true"
+     ],
+     "source": "content.js:220-224"
+    },
+    {
+     "name": "queued callback kind (chosen from document.hidden at schedule time)",
+     "where": "timer",
+     "values": [
+      "none",
+      "requestAnimationFrame",
+      "setTimeout(0)"
+     ],
+     "source": "content.js:226-227"
+    },
+    {
+     "name": "document.hidden",
+     "where": "DOM",
+     "values": [
+      "false",
+      "true"
+     ],
+     "source": "content.js:226"
+    },
+    {
+     "name": "settings / allowOnce mirrors",
+     "where": "JS variable",
+     "values": [
+      "..."
+     ],
+     "source": "content.js:8-9,13-23"
+    },
+    {
+     "name": "byThumb / byMedia (last wins), byTweet (first wins) - never evicted",
+     "where": "JS variable",
+     "values": [
+      "grow"
+     ],
+     "source": "content.js:4-6,29-37"
+    },
+    {
+     "name": "before WeakMap",
+     "where": "JS variable",
+     "values": [
+      "per-video snapshots"
+     ],
+     "source": "content.js:109"
+    },
+    {
+     "name": "lastPath + 500 ms setInterval (never cleared)",
+     "where": "timer",
+     "values": [
+      "running"
+     ],
+     "source": "content.js:255-258"
+    },
+    {
+     "name": "MutationObserver (childList, subtree, attributes poster/src)",
+     "where": "JS variable",
+     "values": [
+      "not started",
+      "observing"
+     ],
+     "source": "content.js:244-252"
+    },
+    {
+     "name": "document listeners: xvg:media; play/playing/loadeddata (capture)",
+     "where": "DOM",
+     "values": [
+      "attached"
+     ],
+     "source": "content.js:26,240-242"
+    }
+   ],
+   "states": [
+    {
+     "id": "C0",
+     "label": "Idle, visible",
+     "definition": {
+      "pending": "false",
+      "hidden": "false"
+     }
+    },
+    {
+     "id": "C1",
+     "label": "Animation-frame scan queued, visible",
+     "definition": {
+      "pending": "true",
+      "queued": "rAF",
+      "hidden": "false"
+     }
+    },
+    {
+     "id": "C2",
+     "label": "Animation-frame scan queued, tab hidden (stalled)",
+     "definition": {
+      "pending": "true",
+      "queued": "rAF",
+      "hidden": "true"
+     }
+    },
+    {
+     "id": "C3",
+     "label": "Idle, hidden",
+     "definition": {
+      "pending": "false",
+      "hidden": "true"
+     }
+    },
+    {
+     "id": "C4",
+     "label": "Timeout scan queued (scheduled while hidden)",
+     "definition": {
+      "pending": "true",
+      "queued": "setTimeout"
+     }
+    }
+   ],
+   "initial": "C0",
+   "events": [
+    {
+     "id": "SE1",
+     "label": "schedule() called (storage callback / onChanged for any local key / xvg:media / observed mutation / pathname change / observer start)",
+     "kind": "page"
+    },
+    {
+     "id": "SE2",
+     "label": "animation frame callback runs",
+     "kind": "browser"
+    },
+    {
+     "id": "SE5",
+     "label": "setTimeout(0) callback runs",
+     "kind": "timer"
+    },
+    {
+     "id": "SE3",
+     "label": "tab becomes hidden",
+     "kind": "browser"
+    },
+    {
+     "id": "SE4",
+     "label": "tab becomes visible",
+     "kind": "browser"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "C0",
+     "event": "SE1",
+     "to": "C1",
+     "guard": "",
+     "side_effects": [
+      "trigger-specific writes; pending=true; rAF queued"
+     ],
+     "source": "content.js:220-227"
+    },
+    {
+     "from": "C1",
+     "event": "SE1",
+     "to": "C1",
+     "guard": "pending",
+     "side_effects": [
+      "writes applied; nothing queued"
+     ],
+     "source": "content.js:222"
+    },
+    {
+     "from": "C2",
+     "event": "SE1",
+     "to": "C2",
+     "guard": "pending is still true from the frame requested before hiding",
+     "side_effects": [
+      "writes applied; returns at the pending check: the hidden-tab timeout path is NOT taken, no scan"
+     ],
+     "source": "content.js:222,226"
+    },
+    {
+     "from": "C3",
+     "event": "SE1",
+     "to": "C4",
+     "guard": "",
+     "side_effects": [
+      "pending=true; setTimeout(run,0)"
+     ],
+     "source": "content.js:223-226"
+    },
+    {
+     "from": "C4",
+     "event": "SE1",
+     "to": "C4",
+     "guard": "pending",
+     "side_effects": [
+      "writes applied; nothing queued"
+     ],
+     "source": "content.js:222"
+    },
+    {
+     "from": "C0",
+     "event": "SE2",
+     "to": "C0",
+     "guard": "nothing queued",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C1",
+     "event": "SE2",
+     "to": "C0",
+     "guard": "",
+     "side_effects": [
+      "pending=false; scan(): process all attached videos, sweep orphan overlays; resulting DOM changes -> SE1"
+     ],
+     "source": "content.js:208-218,224"
+    },
+    {
+     "from": "C2",
+     "event": "SE2",
+     "to": "C2",
+     "guard": "frames are not delivered while hidden (browser behaviour)",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C3",
+     "event": "SE2",
+     "to": "C3",
+     "guard": "nothing queued",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C4",
+     "event": "SE2",
+     "to": "C4",
+     "guard": "no frame queued",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C0",
+     "event": "SE5",
+     "to": "C0",
+     "guard": "no timeout queued",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C1",
+     "event": "SE5",
+     "to": "C1",
+     "guard": "no timeout queued",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C2",
+     "event": "SE5",
+     "to": "C2",
+     "guard": "no timeout queued",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C3",
+     "event": "SE5",
+     "to": "C3",
+     "guard": "no timeout queued",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C4",
+     "event": "SE5",
+     "to": "C3",
+     "guard": "tab still hidden (C0 if it became visible meanwhile)",
+     "side_effects": [
+      "pending=false; scan() runs in the hidden tab (browsers throttle background timers, typically to >=1 s)"
+     ],
+     "source": "content.js:224-226"
+    },
+    {
+     "from": "C0",
+     "event": "SE3",
+     "to": "C3",
+     "guard": "",
+     "side_effects": [
+      "no visibilitychange listener"
+     ],
+     "source": "content.js:1-259"
+    },
+    {
+     "from": "C1",
+     "event": "SE3",
+     "to": "C2",
+     "guard": "frame not yet delivered",
+     "side_effects": [
+      "queued frame is frozen; pending stays true for the whole hidden period"
+     ],
+     "source": "content.js:222-227"
+    },
+    {
+     "from": "C2",
+     "event": "SE3",
+     "to": "C2",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C3",
+     "event": "SE3",
+     "to": "C3",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C4",
+     "event": "SE3",
+     "to": "C4",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:226"
+    },
+    {
+     "from": "C0",
+     "event": "SE4",
+     "to": "C0",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C1",
+     "event": "SE4",
+     "to": "C1",
+     "guard": "",
+     "side_effects": [],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C2",
+     "event": "SE4",
+     "to": "C1",
+     "guard": "",
+     "side_effects": [
+      "frozen frame delivered on the next frame -> scan"
+     ],
+     "source": "content.js:227"
+    },
+    {
+     "from": "C3",
+     "event": "SE4",
+     "to": "C0",
+     "guard": "",
+     "side_effects": [
+      "becoming visible triggers no scan by itself"
+     ],
+     "source": "content.js:1-259"
+    },
+    {
+     "from": "C4",
+     "event": "SE4",
+     "to": "C4",
+     "guard": "",
+     "side_effects": [
+      "timeout still fires"
+     ],
+     "source": "content.js:226"
+    }
+   ],
+   "notes": [
+    "document.hidden is sampled only when schedule() queues something. A frame requested just before the tab is hidden leaves pending=true, and every later schedule() returns early, so no scan runs until the tab is visible again (C1 -> C2). X mutates its DOM continuously, so a pending frame at the moment of switching tabs is likely; whether already-requested frames are flushed on hide is browser behaviour.",
+    "In C2 only the capture-phase guard still blocks (content.js:231-242).",
+    "Nothing schedules a scan at allowOnce.until (content.js:93).",
+    "After an extension reload the orphaned script gets no storage events and sendMessage throws (content.js:187).",
+    "Records come from a DOM CustomEvent any page-world script can dispatch (content.js:26).",
+    "Top frame only (manifest.json:16-21)."
+   ]
+  },
+  {
+   "name": "Background service worker + chrome.storage.local (allowOnce slot and player payloads)",
+   "state_variables": [
+    {
+     "name": "allowOnce",
+     "where": "chrome.storage",
+     "values": [
+      "absent",
+      "{tweetId, until=now+15min}"
+     ],
+     "source": "background.js:16"
+    },
+    {
+     "name": "xvg_p_<id> payload keys",
+     "where": "chrome.storage",
+     "values": [
+      "0..n {created, tweetId, screenName, text, variants, poster, kind}"
+     ],
+     "source": "background.js:11-12"
+    },
+    {
+     "name": "settings",
+     "where": "chrome.storage",
+     "values": [
+      "absent",
+      "{enabled, allowlist}"
+     ],
+     "source": "popup.js:38"
+    },
+    {
+     "name": "opened tabs",
+     "where": "DOM",
+     "values": [
+      "one per accepted message"
+     ],
+     "source": "background.js:13,17"
+    }
+   ],
+   "states": [
+    {
+     "id": "A0",
+     "label": "allowOnce absent",
+     "definition": {
+      "allowOnce": "absent"
+     }
+    },
+    {
+     "id": "A1",
+     "label": "allowOnce active for tweet T",
+     "definition": {
+      "allowOnce": "{tweetId:T, until>now}"
+     }
+    },
+    {
+     "id": "A2",
+     "label": "allowOnce expired but still stored",
+     "definition": {
+      "allowOnce": "{tweetId:T, until<=now}"
+     }
+    }
+   ],
+   "initial": "A0",
+   "events": [
+    {
+     "id": "BE1",
+     "label": "xvg:open with non-empty variants",
+     "kind": "message"
+    },
+    {
+     "id": "BE2",
+     "label": "xvg:open with empty variants and tweetId == T",
+     "kind": "message"
+    },
+    {
+     "id": "BE3",
+     "label": "xvg:open with empty variants and tweetId U != T",
+     "kind": "message"
+    },
+    {
+     "id": "BE4",
+     "label": "xvg:open with empty variants and no tweetId",
+     "kind": "message"
+    },
+    {
+     "id": "BE5",
+     "label": "clock passes allowOnce.until",
+     "kind": "timer"
+    },
+    {
+     "id": "BE6",
+     "label": "runtime.onStartup / onInstalled",
+     "kind": "browser"
+    },
+    {
+     "id": "BE7",
+     "label": "any other runtime message",
+     "kind": "message"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "A0",
+     "event": "BE1",
+     "to": "A0",
+     "guard": "",
+     "side_effects": [
+      "cleanup() started (async)",
+      "xvg_p_<id> written, then player.html?id=<id> tab created",
+      "allowOnce untouched"
+     ],
+     "source": "background.js:6,10-14"
+    },
+    {
+     "from": "A1",
+     "event": "BE1",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup() started (async)",
+      "xvg_p_<id> written, then player.html?id=<id> tab created",
+      "allowOnce untouched"
+     ],
+     "source": "background.js:6,10-14"
+    },
+    {
+     "from": "A2",
+     "event": "BE1",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [
+      "cleanup() started (async)",
+      "xvg_p_<id> written, then player.html?id=<id> tab created",
+      "allowOnce untouched"
+     ],
+     "source": "background.js:6,10-14"
+    },
+    {
+     "from": "A0",
+     "event": "BE2",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "allowOnce set, then https://x.com/i/status/<id> tab created"
+     ],
+     "source": "background.js:6,15-19"
+    },
+    {
+     "from": "A1",
+     "event": "BE2",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "until pushed to now+15min",
+      "another tab"
+     ],
+     "source": "background.js:6,15-19"
+    },
+    {
+     "from": "A2",
+     "event": "BE2",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "slot overwritten",
+      "tab"
+     ],
+     "source": "background.js:6,15-19"
+    },
+    {
+     "from": "A0",
+     "event": "BE3",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "allowOnce set for U",
+      "tab"
+     ],
+     "source": "background.js:6,15-19"
+    },
+    {
+     "from": "A1",
+     "event": "BE3",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "slot overwritten with U: tweet T loses its pass in every tab at the next evaluation",
+      "tab"
+     ],
+     "source": "background.js:15-19; content.js:21,93"
+    },
+    {
+     "from": "A2",
+     "event": "BE3",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup()",
+      "slot overwritten with U",
+      "tab"
+     ],
+     "source": "background.js:6,15-19"
+    },
+    {
+     "from": "A0",
+     "event": "BE4",
+     "to": "A0",
+     "guard": "",
+     "side_effects": [
+      "cleanup() runs; neither branch taken, no tab"
+     ],
+     "source": "background.js:6,10,15"
+    },
+    {
+     "from": "A1",
+     "event": "BE4",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "cleanup() runs; neither branch taken, no tab"
+     ],
+     "source": "background.js:6,10,15"
+    },
+    {
+     "from": "A2",
+     "event": "BE4",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [
+      "cleanup() runs; neither branch taken, no tab"
+     ],
+     "source": "background.js:6,10,15"
+    },
+    {
+     "from": "A0",
+     "event": "BE5",
+     "to": "A0",
+     "guard": "",
+     "side_effects": [],
+     "source": "background.js:16"
+    },
+    {
+     "from": "A1",
+     "event": "BE5",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [
+      "no code runs; key stays; noticed only when isAllowed is next evaluated"
+     ],
+     "source": "content.js:93"
+    },
+    {
+     "from": "A2",
+     "event": "BE5",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [],
+     "source": "background.js:16"
+    },
+    {
+     "from": "A0",
+     "event": "BE6",
+     "to": "A0",
+     "guard": "",
+     "side_effects": [
+      "xvg_p_* older than 24 h removed; allowOnce and settings untouched"
+     ],
+     "source": "background.js:23-32"
+    },
+    {
+     "from": "A0",
+     "event": "BE7",
+     "to": "A0",
+     "guard": "",
+     "side_effects": [
+      "ignored before cleanup (early return)"
+     ],
+     "source": "background.js:5"
+    },
+    {
+     "from": "A1",
+     "event": "BE6",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "xvg_p_* older than 24 h removed; allowOnce and settings untouched"
+     ],
+     "source": "background.js:23-32"
+    },
+    {
+     "from": "A1",
+     "event": "BE7",
+     "to": "A1",
+     "guard": "",
+     "side_effects": [
+      "ignored before cleanup (early return)"
+     ],
+     "source": "background.js:5"
+    },
+    {
+     "from": "A2",
+     "event": "BE6",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [
+      "xvg_p_* older than 24 h removed; allowOnce and settings untouched"
+     ],
+     "source": "background.js:23-32"
+    },
+    {
+     "from": "A2",
+     "event": "BE7",
+     "to": "A2",
+     "guard": "",
+     "side_effects": [
+      "ignored before cleanup (early return)"
+     ],
+     "source": "background.js:5"
+    }
+   ],
+   "notes": [
+    "No in-memory state. cleanup() now also runs at the start of every xvg:open (background.js:6): payload keys older than 24 h are removed whenever any video is opened, on startup and on install/update.",
+    "allowOnce is one slot shared by all tabs; never deleted, only overwritten.",
+    "chrome.runtime.lastError is not checked in the set callbacks: the tab opens even if the write failed (background.js:12-18).",
+    "content.js no longer sends a message with neither variants nor tweetId (content.js:186), so BE4 is unreachable from the shipped content script but still handled as a no-op."
+   ]
+  },
+  {
+   "name": "Player tab (player.html + player.js)",
+   "state_variables": [
+    {
+     "name": "load callback pending",
+     "where": "JS variable",
+     "values": [
+      "true",
+      "false"
+     ],
+     "source": "player.js:9"
+    },
+    {
+     "name": "#main content",
+     "where": "DOM",
+     "values": [
+      "<video id=v controls autoplay playsinline>",
+      "error div (video detached)"
+     ],
+     "source": "player.html:28; player.js:12"
+    },
+    {
+     "name": "v.src",
+     "where": "video element property",
+     "values": [
+      "unset",
+      "variant url"
+     ],
+     "source": "player.js:37,54"
+    },
+    {
+     "name": "v.paused / ended / currentTime",
+     "where": "video element property",
+     "values": [
+      "browser-controlled"
+     ],
+     "source": "player.js:38,48-49,52"
+    },
+    {
+     "name": "resume ({t, playing} to apply at next loadedmetadata)",
+     "where": "JS variable",
+     "values": [
+      "null",
+      "{t, playing}"
+     ],
+     "source": "player.js:43-52"
+    },
+    {
+     "name": "persistent 'loadedmetadata' listener (exactly one, added after first src)",
+     "where": "DOM",
+     "values": [
+      "absent (before payload)",
+      "attached"
+     ],
+     "source": "player.js:44-50"
+    },
+    {
+     "name": "v.autoplay / autoplay attribute",
+     "where": "DOM",
+     "values": [
+      "true (HTML)",
+      "false after the first quality change"
+     ],
+     "source": "player.html:28; player.js:53"
+    },
+    {
+     "name": "v.poster, v.loop, v.muted",
+     "where": "video element property",
+     "values": [
+      "defaults",
+      "poster from payload; loop+muted for animated_gif"
+     ],
+     "source": "player.js:25-26"
+    },
+    {
+     "name": "#quality options / value / hidden",
+     "where": "DOM",
+     "values": [
+      "empty",
+      "one per variant",
+      "hidden when <2 variants or error"
+     ],
+     "source": "player.js:13,28-35"
+    },
+    {
+     "name": "sel.onchange",
+     "where": "DOM",
+     "values": [
+      "null",
+      "handler"
+     ],
+     "source": "player.js:51"
+    },
+    {
+     "name": "#who text, document.title, #text",
+     "where": "DOM",
+     "values": [
+      "defaults",
+      "from payload"
+     ],
+     "source": "player.js:16-24"
+    },
+    {
+     "name": "xvg_p_<id> (read once)",
+     "where": "chrome.storage",
+     "values": [
+      "present",
+      "absent"
+     ],
+     "source": "player.js:3,9"
+    }
+   ],
+   "states": [
+    {
+     "id": "L0",
+     "label": "Loading payload",
+     "definition": {
+      "load pending": "true",
+      "v.src": "unset"
+     }
+    },
+    {
+     "id": "L1",
+     "label": "Expired / missing payload message",
+     "definition": {
+      "#main": "error div",
+      "#quality": "hidden"
+     }
+    },
+    {
+     "id": "L2",
+     "label": "Loaded, paused",
+     "definition": {
+      "v.src": "set",
+      "paused": "true",
+      "resume": "null"
+     }
+    },
+    {
+     "id": "L3",
+     "label": "Loaded, playing",
+     "definition": {
+      "v.src": "set",
+      "paused": "false",
+      "ended": "false",
+      "resume": "null"
+     }
+    },
+    {
+     "id": "L4",
+     "label": "Switching quality (src replaced, metadata not yet loaded)",
+     "definition": {
+      "resume": "{t, playing} from the FIRST change of this switch",
+      "autoplay": "false"
+     }
+    },
+    {
+     "id": "L6",
+     "label": "Ended",
+     "definition": {
+      "ended": "true",
+      "resume": "null"
+     }
+    },
+    {
+     "id": "L5",
+     "label": "Tab closed",
+     "definition": {}
+    }
+   ],
+   "initial": "L0",
+   "events": [
+    {
+     "id": "PE1",
+     "label": "storage get callback, payload has variants",
+     "kind": "storage"
+    },
+    {
+     "id": "PE2",
+     "label": "storage get callback, payload missing or without variants",
+     "kind": "storage"
+    },
+    {
+     "id": "PE3",
+     "label": "user toggles play/pause (native controls)",
+     "kind": "user"
+    },
+    {
+     "id": "PE4",
+     "label": "user selects a different quality (change event)",
+     "kind": "user"
+    },
+    {
+     "id": "PE5",
+     "label": "loadedmetadata fires",
+     "kind": "browser"
+    },
+    {
+     "id": "PE6",
+     "label": "user clicks Close",
+     "kind": "user"
+    },
+    {
+     "id": "PE7",
+     "label": "media load fails (no loadedmetadata)",
+     "kind": "browser"
+    },
+    {
+     "id": "PE8",
+     "label": "tab hidden / shown",
+     "kind": "browser"
+    },
+    {
+     "id": "PE9",
+     "label": "playback reaches the end",
+     "kind": "browser"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "L0",
+     "event": "PE1",
+     "to": "L3",
+     "guard": "play() resolves",
+     "side_effects": [
+      "#who/title/#text filled",
+      "poster; loop+muted if animated_gif",
+      "options appended; sel hidden if <2",
+      "v.src=variants[0].url",
+      "v.play() (rejection swallowed)",
+      "resume=null; persistent loadedmetadata listener added",
+      "sel.onchange assigned"
+     ],
+     "source": "player.js:9-55"
+    },
+    {
+     "from": "L0",
+     "event": "PE1",
+     "to": "L2",
+     "guard": "play() rejected by autoplay policy (browser-dependent)",
+     "side_effects": [
+      "#who/title/#text filled",
+      "poster; loop+muted if animated_gif",
+      "options appended; sel hidden if <2",
+      "v.src=variants[0].url",
+      "v.play() (rejection swallowed)",
+      "resume=null; persistent loadedmetadata listener added",
+      "sel.onchange assigned"
+     ],
+     "source": "player.js:38"
+    },
+    {
+     "from": "L0",
+     "event": "PE2",
+     "to": "L1",
+     "guard": "",
+     "side_effects": [
+      "#main replaced by error text (video detached)",
+      "sel.hidden=true"
+     ],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L0",
+     "event": "PE3",
+     "to": "L0",
+     "guard": "",
+     "side_effects": [
+      "no src: nothing loads"
+     ],
+     "source": "player.html:28"
+    },
+    {
+     "from": "L0",
+     "event": "PE4",
+     "to": "L0",
+     "guard": "unreachable: no options, onchange null",
+     "side_effects": [],
+     "source": "player.js:28-34,51"
+    },
+    {
+     "from": "L0",
+     "event": "PE5",
+     "to": "L0",
+     "guard": "cannot fire without src",
+     "side_effects": [],
+     "source": "player.js:44"
+    },
+    {
+     "from": "L0",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L0",
+     "event": "PE7",
+     "to": "L0",
+     "guard": "cannot occur without src",
+     "side_effects": [],
+     "source": "player.js:37"
+    },
+    {
+     "from": "L0",
+     "event": "PE8",
+     "to": "L0",
+     "guard": "",
+     "side_effects": [
+      "no handler"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L0",
+     "event": "PE9",
+     "to": "L0",
+     "guard": "cannot occur",
+     "side_effects": [],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L1",
+     "event": "PE1",
+     "to": "L1",
+     "guard": "callback runs once",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE2",
+     "to": "L1",
+     "guard": "callback runs once",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE3",
+     "to": "L1",
+     "guard": "video element removed",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE4",
+     "to": "L1",
+     "guard": "select hidden; onchange never assigned",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE5",
+     "to": "L1",
+     "guard": "listener never added (early return)",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE7",
+     "to": "L1",
+     "guard": "no media",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE8",
+     "to": "L1",
+     "guard": "no handler",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE9",
+     "to": "L1",
+     "guard": "no media",
+     "side_effects": [],
+     "source": "player.js:11-15"
+    },
+    {
+     "from": "L1",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L2",
+     "event": "PE1",
+     "to": "L2",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L2",
+     "event": "PE2",
+     "to": "L2",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L2",
+     "event": "PE3",
+     "to": "L3",
+     "guard": "",
+     "side_effects": [
+      "native play"
+     ],
+     "source": "player.html:28"
+    },
+    {
+     "from": "L2",
+     "event": "PE4",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "resume={t: currentTime, playing:false}",
+      "v.autoplay=false",
+      "v.src=sel.value"
+     ],
+     "source": "player.js:51-55"
+    },
+    {
+     "from": "L2",
+     "event": "PE5",
+     "to": "L2",
+     "guard": "resume is null (e.g. the initial load)",
+     "side_effects": [
+      "listener returns immediately"
+     ],
+     "source": "player.js:44-45"
+    },
+    {
+     "from": "L2",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L2",
+     "event": "PE7",
+     "to": "L2",
+     "guard": "",
+     "side_effects": [
+      "no handler, no message"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L2",
+     "event": "PE8",
+     "to": "L2",
+     "guard": "",
+     "side_effects": [
+      "no handler"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L2",
+     "event": "PE9",
+     "to": "L2",
+     "guard": "cannot occur while paused",
+     "side_effects": [],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L3",
+     "event": "PE1",
+     "to": "L3",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L3",
+     "event": "PE2",
+     "to": "L3",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L3",
+     "event": "PE3",
+     "to": "L2",
+     "guard": "",
+     "side_effects": [
+      "native pause"
+     ],
+     "source": "player.html:28"
+    },
+    {
+     "from": "L3",
+     "event": "PE4",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "resume={t, playing:true}",
+      "v.autoplay=false",
+      "v.src=sel.value"
+     ],
+     "source": "player.js:51-55"
+    },
+    {
+     "from": "L3",
+     "event": "PE5",
+     "to": "L3",
+     "guard": "resume is null",
+     "side_effects": [
+      "listener returns immediately"
+     ],
+     "source": "player.js:44-45"
+    },
+    {
+     "from": "L3",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L3",
+     "event": "PE7",
+     "to": "L2",
+     "guard": "",
+     "side_effects": [
+      "playback stops by browser; no handler"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L3",
+     "event": "PE8",
+     "to": "L3",
+     "guard": "",
+     "side_effects": [
+      "no handler; browser decides whether a hidden tab keeps playing"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L3",
+     "event": "PE9",
+     "to": "L6",
+     "guard": "v.loop false (animated_gif loops)",
+     "side_effects": [
+      "no handler"
+     ],
+     "source": "player.js:26"
+    },
+    {
+     "from": "L4",
+     "event": "PE1",
+     "to": "L4",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L4",
+     "event": "PE2",
+     "to": "L4",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L4",
+     "event": "PE3",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "native play()/pause() on the loading element; resume.playing is not updated, so a pause made now is overridden (and a play made now is kept) at loadedmetadata"
+     ],
+     "source": "player.js:48-49"
+    },
+    {
+     "from": "L4",
+     "event": "PE4",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "resume kept from the first change (not recaptured)",
+      "v.autoplay=false again",
+      "src replaced again"
+     ],
+     "source": "player.js:52-54"
+    },
+    {
+     "from": "L4",
+     "event": "PE5",
+     "to": "L3",
+     "guard": "resume.playing true",
+     "side_effects": [
+      "resume=null",
+      "currentTime=r.t",
+      "play() (rejection swallowed)"
+     ],
+     "source": "player.js:44-50"
+    },
+    {
+     "from": "L4",
+     "event": "PE5",
+     "to": "L2",
+     "guard": "resume.playing false (or the user pressed play during the switch: then L3)",
+     "side_effects": [
+      "resume=null",
+      "currentTime=r.t",
+      "no autoplay: attribute was removed"
+     ],
+     "source": "player.js:44-50,53"
+    },
+    {
+     "from": "L4",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L4",
+     "event": "PE7",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "no error handler or message; resume stays set and is applied at the next successful load"
+     ],
+     "source": "player.js:45-49"
+    },
+    {
+     "from": "L4",
+     "event": "PE8",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "no handler"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L4",
+     "event": "PE9",
+     "to": "L4",
+     "guard": "cannot occur before metadata",
+     "side_effects": [],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L6",
+     "event": "PE1",
+     "to": "L6",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L6",
+     "event": "PE2",
+     "to": "L6",
+     "guard": "cannot recur",
+     "side_effects": [],
+     "source": "player.js:9"
+    },
+    {
+     "from": "L6",
+     "event": "PE3",
+     "to": "L3",
+     "guard": "",
+     "side_effects": [
+      "native replay (browser behaviour)"
+     ],
+     "source": "player.html:28"
+    },
+    {
+     "from": "L6",
+     "event": "PE4",
+     "to": "L4",
+     "guard": "",
+     "side_effects": [
+      "resume={t: duration, playing:false} because v.ended is true",
+      "autoplay=false",
+      "src replaced; after metadata the video sits paused at the end position"
+     ],
+     "source": "player.js:52-54"
+    },
+    {
+     "from": "L6",
+     "event": "PE5",
+     "to": "L6",
+     "guard": "resume is null",
+     "side_effects": [],
+     "source": "player.js:44-45"
+    },
+    {
+     "from": "L6",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "",
+     "side_effects": [
+      "window.close()"
+     ],
+     "source": "player.js:7"
+    },
+    {
+     "from": "L6",
+     "event": "PE7",
+     "to": "L6",
+     "guard": "",
+     "side_effects": [],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L6",
+     "event": "PE8",
+     "to": "L6",
+     "guard": "",
+     "side_effects": [
+      "no handler"
+     ],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L6",
+     "event": "PE9",
+     "to": "L6",
+     "guard": "",
+     "side_effects": [],
+     "source": "player.js:1-57"
+    },
+    {
+     "from": "L5",
+     "event": "PE1",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE2",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE3",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE4",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE5",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE6",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE7",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE8",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    },
+    {
+     "from": "L5",
+     "event": "PE9",
+     "to": "L5",
+     "guard": "document destroyed",
+     "side_effects": [
+      "storage key xvg_p_<id> remains until a cleanup >24 h later"
+     ],
+     "source": "player.js:7; background.js:23-30"
+    }
+   ],
+   "notes": [
+    "window.close() on a tab made by chrome.tabs.create is browser-dependent (player.js:7).",
+    "Initial v.play() with sound depends on the browser autoplay policy; rejection swallowed (player.js:38).",
+    "Assigning v.src runs the media load algorithm synchronously (paused=true, currentTime=0, playbackRate reset). resume is captured before that and only if no resume is pending, so a second change before metadata keeps the first position (player.js:52-54).",
+    "A quality change made before the very first metadata has loaded captures t=0 and playing=!paused (true right after play() was called).",
+    "After a failed load resume stays set and is applied at the next successful loadedmetadata (player.js:45-49).",
+    "No error, visibility or unload handlers; the player writes nothing to storage and does not delete its payload key.",
+    "Missing ?id -> key 'xvg_p_null' -> L1 (player.js:2-3)."
+   ]
+  },
+  {
+   "name": "Page-world network hook (inject.js)",
+   "state_variables": [
+    {
+     "name": "window.__xvgHooked",
+     "where": "JS variable",
+     "values": [
+      "undefined",
+      "true"
+     ],
+     "source": "inject.js:5-6"
+    },
+    {
+     "name": "window.fetch replaced by async wrapper",
+     "where": "JS variable",
+     "values": [
+      "native",
+      "wrapped"
+     ],
+     "source": "inject.js:102-112"
+    },
+    {
+     "name": "XMLHttpRequest.prototype.open / send replaced",
+     "where": "JS variable",
+     "values": [
+      "native",
+      "wrapped"
+     ],
+     "source": "inject.js:115-132"
+    },
+    {
+     "name": "xhr.__xvgUrl; one extra 'load' listener per send()",
+     "where": "JS variable",
+     "values": [
+      "unset",
+      "url"
+     ],
+     "source": "inject.js:117,122"
+    }
+   ],
+   "states": [
+    {
+     "id": "H0",
+     "label": "Not hooked",
+     "definition": {
+      "__xvgHooked": "undefined"
+     }
+    },
+    {
+     "id": "H1",
+     "label": "Hooked",
+     "definition": {
+      "__xvgHooked": "true"
+     }
+    }
+   ],
+   "initial": "H0",
+   "events": [
+    {
+     "id": "IE1",
+     "label": "inject.js executes (document_start, MAIN world)",
+     "kind": "browser"
+    },
+    {
+     "id": "IE2",
+     "label": "fetch response from URL matching /(graphql|i/api)/",
+     "kind": "page"
+    },
+    {
+     "id": "IE3",
+     "label": "XHR load event",
+     "kind": "page"
+    },
+    {
+     "id": "IE4",
+     "label": "any other request",
+     "kind": "page"
+    }
+   ],
+   "transitions": [
+    {
+     "from": "H0",
+     "event": "IE1",
+     "to": "H1",
+     "guard": "",
+     "side_effects": [
+      "flag set, fetch and XHR open/send wrapped"
+     ],
+     "source": "inject.js:4-6,102-132"
+    },
+    {
+     "from": "H1",
+     "event": "IE1",
+     "to": "H1",
+     "guard": "",
+     "side_effects": [
+      "early return"
+     ],
+     "source": "inject.js:5"
+    },
+    {
+     "from": "H0",
+     "event": "IE2",
+     "to": "H0",
+     "guard": "",
+     "side_effects": [
+      "not observed"
+     ],
+     "source": "inject.js:102"
+    },
+    {
+     "from": "H1",
+     "event": "IE2",
+     "to": "H1",
+     "guard": "",
+     "side_effects": [
+      "clone read asynchronously; JSON walked (depth<=60); CustomEvent 'xvg:media' dispatched if any video/animated_gif found"
+     ],
+     "source": "inject.js:89-99,103-112"
+    },
+    {
+     "from": "H0",
+     "event": "IE3",
+     "to": "H0",
+     "guard": "",
+     "side_effects": [
+      "not observed"
+     ],
+     "source": "inject.js:120"
+    },
+    {
+     "from": "H1",
+     "event": "IE3",
+     "to": "H1",
+     "guard": "",
+     "side_effects": [
+      "body passed to handle() for responseType ''/text/json; handle filters by URL and leading '{'"
+     ],
+     "source": "inject.js:120-132,89-91"
+    },
+    {
+     "from": "H0",
+     "event": "IE4",
+     "to": "H0",
+     "guard": "",
+     "side_effects": [],
+     "source": "inject.js:102"
+    },
+    {
+     "from": "H1",
+     "event": "IE4",
+     "to": "H1",
+     "guard": "",
+     "side_effects": [
+      "passes through unchanged"
+     ],
+     "source": "inject.js:107"
+    }
+   ],
+   "notes": [
+    "File unchanged in 1.3.0.",
+    "Ordering between the page consuming a response and the xvg:media event is asynchronous and not guaranteed.",
+    "following = legacy.following || relationship_perspectives.following, or author is the viewer (inject.js:29,57,65); a response omitting those yields following=false."
+   ]
+  }
+ ],
+ "cross_component": [
+  {
+   "description": "Popup commit writes 'settings'; every X tab's content script gets storage.onChanged, updates its mirror and schedules a scan (via setTimeout when that tab is hidden and no frame is pending).",
+   "source": "popup.js:38; content.js:18-23,220-227"
+  },
+  {
+   "description": "Save reads 'settings' from storage before deciding, so changes written by another popup instance are taken into account at that moment (not afterwards during the gate).",
+   "source": "popup.js:106-111"
+  },
+  {
+   "description": "Any chrome.storage.local change triggers schedule() in every X tab.",
+   "source": "content.js:18-23"
+  },
+  {
+   "description": "inject.js 'xvg:media' -> content.js caches -> scan; later records overwrite byThumb/byMedia but not byTweet.",
+   "source": "inject.js:96-98; content.js:26-39"
+  },
+  {
+   "description": "'Play in new tab' -> xvg:open -> background cleanup + payload/player tab, or allowOnce + status tab. One accepted open per 1.5 s per overlay.",
+   "source": "content.js:136-146,182-199; background.js:4-20"
+  },
+  {
+   "description": "allowOnce applies in every tab on /status/<id> for 15 minutes; a second fallback open overwrites it and re-blocks the first tab at its next scan/media event.",
+   "source": "background.js:16; content.js:21,93-96"
+  },
+  {
+   "description": "Player reads xvg_p_<id> once; cleanup (startup, install, every open) removes keys older than 24 h.",
+   "source": "player.js:9; background.js:6,23-32"
+  },
+  {
+   "description": "Removing a blocked <video> makes the next scan remove its overlay if the box has no other video.",
+   "source": "content.js:211-217"
+  },
+  {
+   "description": "SPA navigation: 500 ms pathname poll schedules a scan.",
+   "source": "content.js:255-258"
+  }
+ ],
+ "repeat_checks": [
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L0",
+   "event": "PE3",
+   "after_once": "L0",
+   "after_twice": "L0",
+   "idempotent": true,
+   "residual_differences": [
+    "no src"
+   ],
+   "source": "player.html:28"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L0",
+   "event": "PE4",
+   "after_once": "L0",
+   "after_twice": "L0",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "player.js:28-34"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L0",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L1",
+   "event": "PE3",
+   "after_once": "L1",
+   "after_twice": "L1",
+   "idempotent": true,
+   "residual_differences": [
+    "no video"
+   ],
+   "source": "player.js:12"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L1",
+   "event": "PE4",
+   "after_once": "L1",
+   "after_twice": "L1",
+   "idempotent": true,
+   "residual_differences": [
+    "select hidden"
+   ],
+   "source": "player.js:13"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L1",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L2",
+   "event": "PE3",
+   "after_once": "L3",
+   "after_twice": "L2",
+   "idempotent": false,
+   "residual_differences": [
+    "native toggle"
+   ],
+   "source": "player.html:28"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L2",
+   "event": "PE4",
+   "after_once": "L4 -> L2 at t",
+   "after_twice": "L4 -> L2 at t",
+   "idempotent": true,
+   "residual_differences": [
+    "resume kept from the first change; only the final source differs",
+    "autoplay attribute permanently removed after the first change",
+    "same option twice fires no change event"
+   ],
+   "source": "player.js:51-55"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L2",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L3",
+   "event": "PE3",
+   "after_once": "L2",
+   "after_twice": "L3",
+   "idempotent": false,
+   "residual_differences": [
+    "native toggle"
+   ],
+   "source": "player.html:28"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L3",
+   "event": "PE4",
+   "after_once": "L4 -> L3 at t",
+   "after_twice": "L4 -> L3 at t",
+   "idempotent": true,
+   "residual_differences": [
+    "as L2/PE4"
+   ],
+   "source": "player.js:51-55"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L3",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L4",
+   "event": "PE3",
+   "after_once": "L4",
+   "after_twice": "L4",
+   "idempotent": false,
+   "residual_differences": [
+    "native toggle on a loading element; resume.playing=true overrides a pause made here"
+   ],
+   "source": "player.js:48-49"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L4",
+   "event": "PE4",
+   "after_once": "L4",
+   "after_twice": "L4",
+   "idempotent": true,
+   "residual_differences": [
+    "resume unchanged; src replaced each time"
+   ],
+   "source": "player.js:52-54"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L4",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L6",
+   "event": "PE3",
+   "after_once": "L3",
+   "after_twice": "L2",
+   "idempotent": false,
+   "residual_differences": [
+    "native toggle"
+   ],
+   "source": "player.html:28"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L6",
+   "event": "PE4",
+   "after_once": "L4 -> L2 paused at end",
+   "after_twice": "same",
+   "idempotent": true,
+   "residual_differences": [
+    "ended is no longer treated as playing"
+   ],
+   "source": "player.js:52"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L6",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L5",
+   "event": "PE3",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L5",
+   "event": "PE4",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "state": "L5",
+   "event": "PE6",
+   "after_once": "L5",
+   "after_twice": "L5",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "player.js:7"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E2",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": false,
+   "residual_differences": [
+    "raw user input; no handler"
+   ],
+   "source": "popup.js:20-26"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E3 (load pending)",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "disabled"
+   ],
+   "source": "popup.html:37"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E3 (non-loosening)",
+   "after_once": "F, one write",
+   "after_twice": "F, two writes of the same value",
+   "idempotent": true,
+   "residual_differences": [
+    "no guard on the form between click and callback: two reads, two commits, two hide timers ('Saved' vanishes 2 s after the first)"
+   ],
+   "source": "popup.js:103-113,37-44"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E3 (loosening), 2nd click after the 1st callback",
+   "after_once": "G1",
+   "after_twice": "G1",
+   "idempotent": true,
+   "residual_differences": [
+    "second click lands on the gate within 600 ms and is ignored"
+   ],
+   "source": "popup.js:49,77,101"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E3 (loosening), 2nd click BEFORE the 1st callback",
+   "after_once": "G1",
+   "after_twice": "G1",
+   "idempotent": true,
+   "residual_differences": [
+    "both clicks pass fresh() (view unchanged) and issue a read; gate() runs twice back to back, the second rebuilding the same stage-1 UI and pushing shownAt later",
+    "if the second callback were delayed past a stage-1 yes click, gate() would run in G2 without clearing the interval (see G2/E11) - not reachable with prompt callbacks"
+   ],
+   "source": "popup.js:103-112,67-76"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E4",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:101"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E5",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:76"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "F",
+   "event": "E9",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G1",
+   "event": "E2",
+   "after_once": "G1",
+   "after_twice": "G1",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G1",
+   "event": "E3",
+   "after_once": "G1",
+   "after_twice": "G1",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G1",
+   "event": "E9",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "nothing persisted"
+   ],
+   "source": "popup.js:65-66"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G2",
+   "event": "E2",
+   "after_once": "G2",
+   "after_twice": "G2",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G2",
+   "event": "E3",
+   "after_once": "G2",
+   "after_twice": "G2",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G2",
+   "event": "E9",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "nothing persisted"
+   ],
+   "source": "popup.js:65-66"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G3",
+   "event": "E2",
+   "after_once": "G3",
+   "after_twice": "G3",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G3",
+   "event": "E3",
+   "after_once": "G3",
+   "after_twice": "G3",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "popup.js:47"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G3",
+   "event": "E9",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "nothing persisted"
+   ],
+   "source": "popup.js:65-66"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G1",
+   "event": "E4",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "second click lands on the form: Save ignored 600 ms; checkbox/textarea unguarded (possible unsaved toggle, layout-dependent)"
+   ],
+   "source": "popup.js:58-63,101,104"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G1",
+   "event": "E5",
+   "after_once": "G2",
+   "after_twice": "G2",
+   "idempotent": true,
+   "residual_differences": [
+    "button disabled synchronously; message height no longer changes, so nothing moves under the pointer"
+   ],
+   "source": "popup.js:80-81,97"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G2",
+   "event": "E4",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "as G1/E4"
+   ],
+   "source": "popup.js:58-63"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G2",
+   "event": "E5 (repeated through the end of the wait)",
+   "after_once": "G2",
+   "after_twice": "G3 then F via 'Keep blocking'",
+   "idempotent": false,
+   "residual_differences": [
+    "disabled during the wait; at stage 3 buttons swap and clicks are ignored for 600 ms; afterwards the same spot is 'Keep blocking' (or, in the top 2px, the gap between buttons) -> cancel, nothing stored. State changes, but only in the safe direction"
+   ],
+   "source": "popup.js:81,92-94,101; popup.html:16,22-26"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G3",
+   "event": "E4",
+   "after_once": "F",
+   "after_twice": "F",
+   "idempotent": true,
+   "residual_differences": [
+    "as G1/E4"
+   ],
+   "source": "popup.js:58-63"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "G3",
+   "event": "E5",
+   "after_once": "F, one commit",
+   "after_twice": "F, one commit",
+   "idempotent": true,
+   "residual_differences": [
+    "second click lands on the form: Save ignored 600 ms; checkbox/textarea unguarded (layout-dependent unsaved toggle)",
+    "`current` is updated only when the write succeeds; a Save after 600 ms re-reads storage anyway"
+   ],
+   "source": "popup.js:94,37-44,104-107"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "X",
+   "event": "E2",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "X",
+   "event": "E3",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "X",
+   "event": "E4",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "X",
+   "event": "E5",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "state": "X",
+   "event": "E9",
+   "after_once": "X",
+   "after_twice": "X",
+   "idempotent": true,
+   "residual_differences": [
+    "no document"
+   ],
+   "source": "popup.js:1"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V0",
+   "event": "Ev5",
+   "after_once": "V0",
+   "after_twice": "V0",
+   "idempotent": true,
+   "residual_differences": [
+    "no overlay"
+   ],
+   "source": "content.js:124-148"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V0",
+   "event": "Ev6",
+   "after_once": "V0",
+   "after_twice": "V0",
+   "idempotent": true,
+   "residual_differences": [
+    "no button"
+   ],
+   "source": "content.js:137-146"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V0",
+   "event": "Ev7",
+   "after_once": "V0",
+   "after_twice": "V0",
+   "idempotent": true,
+   "residual_differences": [
+    "no extension click handler"
+   ],
+   "source": "content.js:231-242"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V2",
+   "event": "Ev5",
+   "after_once": "V2",
+   "after_twice": "V2",
+   "idempotent": true,
+   "residual_differences": [
+    "no overlay"
+   ],
+   "source": "content.js:124-148"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V2",
+   "event": "Ev6",
+   "after_once": "V2",
+   "after_twice": "V2",
+   "idempotent": true,
+   "residual_differences": [
+    "no button"
+   ],
+   "source": "content.js:137-146"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V2",
+   "event": "Ev7",
+   "after_once": "V2",
+   "after_twice": "V2",
+   "idempotent": true,
+   "residual_differences": [
+    "no extension click handler"
+   ],
+   "source": "content.js:231-242"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V3",
+   "event": "Ev5",
+   "after_once": "V3",
+   "after_twice": "V3",
+   "idempotent": true,
+   "residual_differences": [
+    "no overlay"
+   ],
+   "source": "content.js:124-148"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V3",
+   "event": "Ev6",
+   "after_once": "V3",
+   "after_twice": "V3",
+   "idempotent": true,
+   "residual_differences": [
+    "no button"
+   ],
+   "source": "content.js:137-146"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V3",
+   "event": "Ev7",
+   "after_once": "V3",
+   "after_twice": "V3",
+   "idempotent": true,
+   "residual_differences": [
+    "no extension click handler"
+   ],
+   "source": "content.js:231-242"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1",
+   "event": "Ev5",
+   "after_once": "V1",
+   "after_twice": "V1",
+   "idempotent": true,
+   "residual_differences": [
+    "dblclick event itself still bubbles to the page"
+   ],
+   "source": "content.js:133-135"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1",
+   "event": "Ev6 (openable)",
+   "after_once": "V1 + 1 tab",
+   "after_twice": "V1 + 1 tab",
+   "idempotent": true,
+   "residual_differences": [
+    "second click within 1500 ms ignored; guard is per overlay, other videos unaffected; a click after 1.5 s opens another tab"
+   ],
+   "source": "content.js:136-143"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1",
+   "event": "Ev6 (nothing to open)",
+   "after_once": "V1n",
+   "after_twice": "V1n",
+   "idempotent": true,
+   "residual_differences": [
+    "note persists; second click rewrites identical values"
+   ],
+   "source": "content.js:144-145,149,158"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1",
+   "event": "Ev7",
+   "after_once": "V1",
+   "after_twice": "V1",
+   "idempotent": true,
+   "residual_differences": [
+    "covered"
+   ],
+   "source": "content.css:1-8"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1n",
+   "event": "Ev5",
+   "after_once": "V1n",
+   "after_twice": "V1n",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "content.js:133-135"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1n",
+   "event": "Ev6",
+   "after_once": "V1n (+1 tab if it has become openable)",
+   "after_twice": "V1n (+1 tab)",
+   "idempotent": true,
+   "residual_differences": [
+    "notice never cleared, even after a successful open"
+   ],
+   "source": "content.js:140-145,149"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V1n",
+   "event": "Ev7",
+   "after_once": "V1n",
+   "after_twice": "V1n",
+   "idempotent": true,
+   "residual_differences": [
+    "covered"
+   ],
+   "source": "content.css:1-8"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V4",
+   "event": "Ev5",
+   "after_once": "V4",
+   "after_twice": "V4",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "content.js:133-135"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V4",
+   "event": "Ev6",
+   "after_once": "V4 + 1 tab",
+   "after_twice": "V4 + 1 tab",
+   "idempotent": true,
+   "residual_differences": [
+    "inherits the previous element's lastOpen and note flag"
+   ],
+   "source": "content.js:136-146"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V4",
+   "event": "Ev7",
+   "after_once": "V4",
+   "after_twice": "V4",
+   "idempotent": true,
+   "residual_differences": [
+    "covered"
+   ],
+   "source": "content.css:1-8"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V5",
+   "event": "Ev5",
+   "after_once": "V5",
+   "after_twice": "V5",
+   "idempotent": true,
+   "residual_differences": [],
+   "source": "content.js:211-217"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V5",
+   "event": "Ev6",
+   "after_once": "V5, orphan overlay gets the note then is swept",
+   "after_twice": "V5",
+   "idempotent": true,
+   "residual_differences": [
+    "nothing opened"
+   ],
+   "source": "content.js:142-145,211-217"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "state": "V5",
+   "event": "Ev7",
+   "after_once": "V5",
+   "after_twice": "V5",
+   "idempotent": true,
+   "residual_differences": [
+    "unreachable"
+   ],
+   "source": "content.js:209"
+  }
+ ],
+ "round_trip_checks": [
+  {
+   "component": "Background service worker + chrome.storage.local (allowOnce slot and player payloads)",
+   "path": [
+    "A0",
+    "BE2",
+    "A1",
+    "BE5",
+    "A2"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "allowOnce key remains (expired); cleanup never removes it"
+   ],
+   "source": "background.js:16,23-30"
+  },
+  {
+   "component": "Background service worker + chrome.storage.local (allowOnce slot and player payloads)",
+   "path": [
+    "A1(T)",
+    "BE3(U)",
+    "A1(U)",
+    "BE2(T)",
+    "A1(T)"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "until differs; U's pass lost; each step opened a tab"
+   ],
+   "source": "background.js:15-19"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "path": [
+    "L3",
+    "PE3",
+    "L2",
+    "PE3",
+    "L3"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "native"
+   ],
+   "source": "player.html:28"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "path": [
+    "L3(A)",
+    "PE4(B)",
+    "L4",
+    "PE4(A)",
+    "L4",
+    "PE5",
+    "L3(A)"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "position and play state preserved (single resume)",
+    "residue: autoplay attribute removed, media reloaded (buffer lost), playbackRate reset to default by the load algorithm, seek precision browser-dependent"
+   ],
+   "source": "player.js:44-55"
+  },
+  {
+   "component": "Player tab (player.html + player.js)",
+   "path": [
+    "L2(A)",
+    "PE4(B)",
+    "L4",
+    "PE5",
+    "L2(B)"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "stays paused at t (autoplay disabled before the src change); only the source differs, as requested"
+   ],
+   "source": "player.js:52-54"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F",
+    "E3+E11(loosening)",
+    "G1",
+    "E4",
+    "F"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "form reset to stored settings (as read at Save): all edits discarded",
+    "Save dead 600 ms",
+    "hidden gate DOM populated"
+   ],
+   "source": "popup.js:58-63,67-76,107"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F",
+    "E3+E11",
+    "G1",
+    "E5",
+    "G2",
+    "E4",
+    "F"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "form reset; timer cleared; hidden yes left disabled 'Wait Ns'; next attempt restarts full 15 s"
+   ],
+   "source": "popup.js:58-63,79-97"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F",
+    "E3+E11",
+    "G1",
+    "E5",
+    "G2",
+    "E6*",
+    "G3",
+    "E4",
+    "F"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "form reset; hidden gate keeps class 'last' and an enabled committing onclick (unreachable; reset by next gate())"
+   ],
+   "source": "popup.js:58-63,92,94"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F",
+    "E2(untick)",
+    "F",
+    "E2(tick)",
+    "F"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "no handler"
+   ],
+   "source": "popup.js:20-26"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F(enabled)",
+    "untick+Save+gate",
+    "F",
+    "tick+Save",
+    "F"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "storage equals the original; re-enabling ungated",
+    "two 'Saved' flashes",
+    "content side: blocked videos V1 -> V3 -> V1; a video that was playing stays paused"
+   ],
+   "source": "popup.js:29-44; content.js:111-179"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "F",
+    "add handle+Save+gate",
+    "F",
+    "remove handle+Save",
+    "F"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "storage equal (no dedupe); removal ungated"
+   ],
+   "source": "popup.js:20-35"
+  },
+  {
+   "component": "Settings popup (popup.html + popup.js)",
+   "path": [
+    "G2",
+    "E9",
+    "X",
+    "reopen",
+    "F"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "nothing persisted"
+   ],
+   "source": "popup.js:5-13"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V0",
+    "Ev1",
+    "V1",
+    "Ev2",
+    "V3"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "dataset 'ok' instead of unset",
+    "muted/autoplay/box position restored",
+    "left paused"
+   ],
+   "source": "content.js:111-122,163-179"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V2(playing)",
+    "Ev1",
+    "V1",
+    "Ev2",
+    "V3"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "paused instead of playing; rest restored"
+   ],
+   "source": "content.js:116,163-179"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V1",
+    "Ev2",
+    "V3",
+    "Ev1",
+    "V1"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "new overlay node (lastOpen and any note reset)"
+   ],
+   "source": "content.js:124-148"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V1",
+    "Ev6(nothing to open)",
+    "V1n",
+    "record arrives",
+    "V1n"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "no way back to the normal blocked message while the overlay lives: text stays 'Can't open this one in a new tab' although the button now works and the author is known"
+   ],
+   "source": "content.js:144,149"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V1",
+    "Ev6",
+    "V1",
+    "close the new tab",
+    "V1"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "this overlay's lastOpen set (1.5 s)",
+    "storage keeps xvg_p_<id> >=24 h, or allowOnce (15 min; key never deleted)"
+   ],
+   "source": "content.js:143; background.js:10-19,23-30"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V1",
+    "Ev8",
+    "V5 (never re-inserted)"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "overlay and class swept; box.style.position stays 'relative' if block() set it"
+   ],
+   "source": "content.js:122,211-217"
+  },
+  {
+   "component": "One <video> element on an X page (content.js per-element gate)",
+   "path": [
+    "V1(A)+V1(B) in one box",
+    "both become allowed",
+    "V3+V3"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "first unblock returns early (sibling still marked blocked) and discards its snapshot; the second restores ITS snapshot's boxPosition, which is 'relative' if it was first blocked after the other: inline position can stay 'relative'. Multi-video boxes only"
+   ],
+   "source": "content.js:113-115,174-175"
+  },
+  {
+   "component": "Content script page-level state and scan scheduler (content.js, one per top-level X document)",
+   "path": [
+    "C1",
+    "SE3",
+    "C2",
+    "SE4",
+    "C1"
+   ],
+   "truly_same_state": false,
+   "residual_differences": [
+    "scheduler variables identical, but every trigger during the hidden period was swallowed by pending=true: no scan or sweep ran while hidden"
+   ],
+   "source": "content.js:222-227"
+  },
+  {
+   "component": "Content script page-level state and scan scheduler (content.js, one per top-level X document)",
+   "path": [
+    "C0",
+    "SE3",
+    "C3",
+    "SE4",
+    "C0"
+   ],
+   "truly_same_state": true,
+   "residual_differences": [
+    "triggers while hidden were handled through C4 (timeout scans)"
+   ],
+   "source": "content.js:226"
+  }
+ ],
+ "findings": [
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #1] 'Play in new tab' not debounced.",
+   "source": "content.js:136-143",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "per-overlay 1500 ms guard."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #2] block/unblock not inverse.",
+   "source": "content.js:113-122,163-179",
+   "status_in_1_3_0": "changed",
+   "status_reason": "muted/autoplay/position restored; play state still not recorded or resumed."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #3] stale overlay kept an allowed replacement video covered; button opened the old element.",
+   "source": "content.js:142,170-178",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "unblock cleans the box unless a sibling is blocked; button resolves the current element."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #4] orphan overlay after element removal.",
+   "source": "content.js:211-217",
+   "status_in_1_3_0": "changed",
+   "status_reason": "swept on next scan; inline position not reset; not swept while a frame-scan is stalled in a hidden tab."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #5] button silently did nothing when nothing could be opened.",
+   "source": "content.js:144-149,186",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "sticky note flag keeps the notice on screen (see new finding: it is never cleared)."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #6] allowOnce single global slot.",
+   "source": "background.js:16; content.js:21,93-96",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #7] pass reusable for 15 min in any tab; key never deleted.",
+   "source": "background.js:16; content.js:93-96",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #8] allowOnce path without record skips the quote-card check.",
+   "source": "content.js:95,63",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #9] no scans in a hidden tab.",
+   "source": "content.js:220-227",
+   "status_in_1_3_0": "changed",
+   "status_reason": "setTimeout path when document.hidden at schedule time; still stalls when a frame was already pending at the moment of hiding (line 222)."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #10] allowOnce expiry noticed only on next evaluation.",
+   "source": "content.js:93",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "no timer."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #11] guard reacts after the media event.",
+   "source": "content.js:231-242",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #12] textContent rewritten every scan.",
+   "source": "content.js:157-161",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "setText()."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #13] record caches inconsistent/unbounded; following can flip with later payloads.",
+   "source": "content.js:29-37,58-68",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #14] overlay stop handlers bubble-phase, 7 types.",
+   "source": "content.js:131-135",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #15] shared container hides allowed siblings.",
+   "source": "content.js:174; content.css:1",
+   "status_in_1_3_0": "changed",
+   "status_reason": "per-frame thrash removed by the shared-box check; the allowed sibling still stays hidden under the cover."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #16] xvg:media forgeable by page scripts.",
+   "source": "content.js:26-39",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #17] after extension reload sendMessage throws; button dead.",
+   "source": "content.js:187",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "no try/catch; no note shown."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #18] gate could reopen for an already-written change (stale `current`).",
+   "source": "popup.js:106-107",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "Save re-reads storage before judging."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #19] Save before initial load judged against DEFAULTS.",
+   "source": "popup.html:37; popup.js:12",
+   "status_in_1_3_0": "changed",
+   "status_reason": "Save disabled until load; edits typed before the callback are still overwritten."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #20] 'Keep blocking' discards every edit.",
+   "source": "popup.js:58-63",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "fill(current)."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #21] same button for all gate stages; wall-clock wait.",
+   "source": "popup.js:79,92-94; popup.html:22-24",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "monotonic clock, CSS order swap, 600 ms dead time, and constant message height."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #22] untracked 'Saved' timers; lastError unchecked.",
+   "source": "popup.js:39-42; background.js:12-18",
+   "status_in_1_3_0": "changed",
+   "status_reason": "popup now checks lastError (silently); timers still untracked; background still unchecked."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #23] hidden #gate-yes keeps a committing onclick after stage-3 cancel.",
+   "source": "popup.js:94,58-63",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "reset only by next gate()."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #24] popup has no storage.onChanged listener.",
+   "source": "popup.js:106",
+   "status_in_1_3_0": "changed",
+   "status_reason": "still none, but the Save decision re-reads storage; form display and an in-flight gate stay stale."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #25] 'reload X to apply everywhere' although changes apply live.",
+   "source": "popup.html:38",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "text unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #26] adding handles while blocking is off is gated; tightening never.",
+   "source": "popup.js:29-35",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "bug",
+   "description": "[1.2.0 #27] quality switch stacked listeners.",
+   "source": "player.js:43-55",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "single resume."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #28] ended treated as playing; autoplay after switch.",
+   "source": "player.js:52-53",
+   "status_in_1_3_0": "fixed",
+   "status_reason": ""
+  },
+  {
+   "severity": "note",
+   "description": "[1.2.0 #29] no media error handling; window.close() browser-dependent.",
+   "source": "player.js:7,37-38",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "smell",
+   "description": "[1.2.0 #30] cleanup only on startup/install.",
+   "source": "background.js:6,23-32",
+   "status_in_1_3_0": "changed",
+   "status_reason": "also on every open; allowOnce never removed."
+  },
+  {
+   "severity": "bug",
+   "description": "[pass 2] 'Can't open' notice erased after one frame.",
+   "source": "content.js:144,149",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "sticky flag."
+  },
+  {
+   "severity": "smell",
+   "description": "[pass 2] lastOpen global to the tab.",
+   "source": "content.js:136",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "now per overlay (still Date.now())."
+  },
+  {
+   "severity": "smell",
+   "description": "[pass 2] play state not restored on unblock.",
+   "source": "content.js:114,163-169",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "snapshot has no paused field."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] snapshot taken at first block overwrites what the page set meanwhile.",
+   "source": "content.js:113-118,166-167",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "smell",
+   "description": "[pass 2] shared-box per-frame overlay rebuild.",
+   "source": "content.js:174",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "early return when a sibling is still blocked."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] sweep / inherited overlay leave inline position:relative.",
+   "source": "content.js:114,122,211-217",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] button opens the first video in the box.",
+   "source": "content.js:142",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "smell",
+   "description": "[pass 2] button swap depended on message height.",
+   "source": "popup.js:73,80,87",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "message no longer rewritten in stages 2/3."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] fresh() drops clicks silently; checkbox/textarea unguarded.",
+   "source": "popup.js:54-56,77,94,101,104",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] non-loosening Save has no double-click guard.",
+   "source": "popup.js:103-112",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "two reads, two writes."
+  },
+  {
+   "severity": "smell",
+   "description": "[pass 2] commit set `current` before the write.",
+   "source": "popup.js:39-40",
+   "status_in_1_3_0": "fixed",
+   "status_reason": "set only after a successful write."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] Save stays disabled if the load callback throws.",
+   "source": "popup.js:9-13,106-107",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "same pattern now also in Save's own callback."
+  },
+  {
+   "severity": "note",
+   "description": "[pass 2] player: pause during a switch overridden; playbackRate reset.",
+   "source": "player.js:44-55",
+   "status_in_1_3_0": "still_present",
+   "status_reason": "unchanged."
+  },
+  {
+   "severity": "bug",
+   "description": "NEW: the hidden-tab scan path is skipped whenever an animation-frame scan is already pending at the moment the tab is hidden. schedule() checks `pending` before `document.hidden`; the frozen frame keeps pending=true, so every later schedule() returns early and no scan or sweep runs until the tab is visible again. X mutates constantly, so a pending frame at tab-switch time is likely. (Whether a browser flushes requested frames on hide is browser behaviour.)",
+   "source": "content.js:220-227"
+  },
+  {
+   "severity": "smell",
+   "description": "NEW: the 'can't open' note is permanent for the life of the overlay: data-xvg-note is never removed, block() returns before writing the normal message, so after a record arrives the overlay still says it can't be opened (the button then works) and never names the author. A replacement <video> in the same box inherits it.",
+   "source": "content.js:144,149"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: Save is asynchronous and gate() neither checks the current state nor clears a running interval. Two overlapping Save reads call gate() twice; if the second callback landed after the stage-1 yes, the old interval would keep running under a rebuilt stage-1 UI, and after a new stage-1 click the orphaned tick would reset shownAt every 250 ms forever (all buttons permanently ignored). Needs a storage callback more than 600 ms late - implausible, but nothing in the code rules it out.",
+   "source": "popup.js:67-99,103-112"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: the form is read in the callback, not at the click (edits made in between are saved), and a non-loosening double click issues two reads and two writes.",
+   "source": "popup.js:106-111"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: storage is re-read only at Save. A `next` already inside the gate is committed 15 s later as captured, overwriting whatever another context stored meanwhile (handles removed elsewhere during the wait come back without being named in the gate message).",
+   "source": "popup.js:94,106-109"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: a failed write is silent: after 'Yes, do it' the form is shown with the unsaved values and neither 'Saved' nor an error appears.",
+   "source": "popup.js:39,94"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: in a shared box the early return in unblock() also skips restoring the box position and drops that video's snapshot; inline 'relative' can remain after all videos are allowed. The allowed video stays invisible while a sibling is blocked.",
+   "source": "content.js:164-175; content.css:1"
+  },
+  {
+   "severity": "note",
+   "description": "NEW: hidden-tab scans use setTimeout(0) per mutation batch (no frame coalescing); cost is bounded only by the browser's background timer throttling.",
+   "source": "content.js:226"
+  }
+ ]
+}

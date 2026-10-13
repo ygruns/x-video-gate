@@ -3,6 +3,7 @@
 // the post's own page with a one-time pass for just that post's video.
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg || msg.type !== "xvg:open") return;
+  cleanup();
   const p = msg.payload || {};
   const opener = sender.tab ? { openerTabId: sender.tab.id, index: sender.tab.index + 1 } : {};
 
