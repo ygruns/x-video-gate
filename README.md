@@ -1,11 +1,10 @@
 # X Video Gate
 
-Browser extension (Manifest V3) that blocks videos and GIFs on X/Twitter from
-accounts you don't follow. A blocked video shows a "Play in new tab" button
+Browser extension (Manifest V3) that blocks videos on X/Twitter from accounts
+you don't follow. GIFs are left alone. A blocked video shows a "Play in new tab" button
 that opens just that one video on a bare page, with no feed around it.
 
-Turning blocking off, letting GIFs play, or adding an account to the allowlist
-takes two confirmations with a 15-second wait between them.
+Turning blocking off or adding an account to the allowlist takes two confirmations with a 15-second wait between them.
 
 ## Install
 

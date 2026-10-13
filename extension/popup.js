@@ -1,4 +1,4 @@
-const DEFAULTS = { enabled: true, blockGifs: true, allowlist: [] };
+const DEFAULTS = { enabled: true, allowlist: [] };
 const WAIT_SECONDS = 15;
 const $ = (id) => document.getElementById(id);
 
@@ -12,7 +12,6 @@ chrome.storage.local.get("settings", (r) => {
 
 function fill(s) {
   $("enabled").checked = s.enabled;
-  $("blockGifs").checked = s.blockGifs;
   $("allowlist").value = s.allowlist.map((h) => "@" + h).join("\n");
 }
 
@@ -21,14 +20,13 @@ function readForm() {
     .split(/[\s,]+/)
     .map((h) => h.trim().replace(/^@/, "").toLowerCase())
     .filter(Boolean);
-  return { enabled: $("enabled").checked, blockGifs: $("blockGifs").checked, allowlist };
+  return { enabled: $("enabled").checked, allowlist };
 }
 
 // Anything that lets more video through than the saved settings do.
 function loosenings(next) {
   const out = [];
   if (current.enabled && !next.enabled) out.push("turn blocking off completely");
-  if (current.blockGifs && !next.blockGifs) out.push("let GIFs play");
   const added = next.allowlist.filter((h) => !current.allowlist.includes(h));
   if (added.length) out.push("always allow " + added.map((h) => "@" + h).join(", "));
   return out;

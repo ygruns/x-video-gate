@@ -5,10 +5,10 @@
   const byMedia = new Map();   // media id -> record
   const byTweet = new Map();   // tweet id -> [records]
 
-  let settings = { enabled: true, blockGifs: true, allowlist: [] };
+  let settings = { enabled: true, allowlist: [] };
   let allowOnce = null;        // { tweetId, until }
 
-  const DEFAULTS = { enabled: true, blockGifs: true, allowlist: [] };
+  const DEFAULTS = { enabled: true, allowlist: [] };
 
   chrome.storage.local.get(["settings", "allowOnce"], (r) => {
     settings = Object.assign({}, DEFAULTS, r.settings || {});
@@ -75,11 +75,17 @@
     return m ? m[1] : null;
   }
 
+  // GIFs are not videos: never blocked, whoever posted them.
+  function isGif(video, rec) {
+    if (rec) return rec.kind === "animated_gif";
+    return (video.getAttribute("poster") || "").includes("/tweet_video_thumb/");
+  }
+
   function isAllowed(video, rec) {
     if (!settings.enabled) return true;
+    if (isGif(video, rec)) return true;
     if (rec) {
       if (rec.following || rec.isMe) return true;
-      if (rec.kind === "animated_gif" && !settings.blockGifs) return true;
       const h = (rec.screenName || "").toLowerCase();
       if (h && settings.allowlist.includes(h)) return true;
     }
