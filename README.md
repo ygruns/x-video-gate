@@ -23,3 +23,9 @@ the link above and load it again.
     py build.py
 
 writes `dist/x-video-gate.zip` from the `extension/` folder.
+
+## Privacy
+
+The extension collects nothing. It reads X's page data in your browser to
+decide which videos to block, keeps your settings in local extension storage,
+and makes no network requests of its own.
