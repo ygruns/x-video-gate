@@ -1,0 +1,14 @@
+.xvg-blocked video { visibility: hidden !important; }
+.xvg-overlay {
+  position: absolute; inset: 0; z-index: 2147483000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: #0f1419; color: #e7e9ea; padding: 16px; text-align: center;
+  font: 600 14px/1.35 -apple-system, "Segoe UI", Roboto, sans-serif;
+  border-radius: inherit; cursor: default;
+}
+.xvg-msg { opacity: .85; max-width: 90%; }
+.xvg-btn {
+  appearance: none; border: 0; border-radius: 999px; padding: 10px 18px;
+  background: #1d9bf0; color: #fff; font: inherit; font-size: 15px; cursor: pointer;
+}
+.xvg-btn:active { transform: scale(.97); }

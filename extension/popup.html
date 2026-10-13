@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X Video Gate</title>
+<style>
+  body { margin: 0; padding: 16px; min-width: 280px; background: #0f1419; color: #e7e9ea;
+    font: 14px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  label.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+  input[type=checkbox] { width: 20px; height: 20px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 80px; margin-top: 6px;
+    background: #202327; color: #e7e9ea; border: 1px solid #333639; border-radius: 8px; padding: 8px; font: inherit; }
+  .hint { opacity: .65; font-size: 12px; }
+  button { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 999px;
+    background: #1d9bf0; color: #fff; font: 600 14px inherit; }
+  #saved { text-align: center; margin-top: 8px; color: #00ba7c; visibility: hidden; }
+  [hidden] { display: none !important; }
+  #gate-msg { opacity: .85; min-height: 60px; }
+  button:disabled { opacity: .5; }
+  #gate-no { background: #00ba7c; }
+  #gate-yes { background: #202327; border: 1px solid #333639; }
+</style>
+</head>
+<body>
+  <h1>X Video Gate</h1>
+  <div id="form">
+  <label class="row">Block videos from non-followed accounts <input type="checkbox" id="enabled"></label>
+  <label class="row">Also block GIFs <input type="checkbox" id="blockGifs"></label>
+  <div style="margin-top:8px">Always allow these accounts
+    <div class="hint">One handle per line, with or without @</div>
+    <textarea id="allowlist" spellcheck="false" autocapitalize="off"></textarea>
+  </div>
+  <button id="save" type="button">Save</button>
+  <div id="saved">Saved — reload X to apply everywhere</div>
+  </div>
+  <div id="gate" hidden>
+    <h1 id="gate-title"></h1>
+    <div id="gate-msg"></div>
+    <button id="gate-no" type="button">Keep blocking</button>
+    <button id="gate-yes" type="button"></button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

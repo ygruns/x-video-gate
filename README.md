@@ -1,0 +1,26 @@
+# X Video Gate
+
+Browser extension (Manifest V3) that blocks videos and GIFs on X/Twitter from
+accounts you don't follow. A blocked video shows a "Play in new tab" button
+that opens just that one video on a bare page, with no feed around it.
+
+Turning blocking off, letting GIFs play, or adding an account to the allowlist
+takes two confirmations with a 15-second wait between them.
+
+## Install
+
+Download `x-video-gate.zip` from the
+[latest release](https://github.com/ygruns/x-video-gate/releases/latest)
+and load it from your browser's extensions page (developer mode), or unzip it
+and use "Load unpacked" pointing at the folder.
+
+## Update
+
+A sideloaded extension does not update itself. Download the newest zip from
+the link above and load it again.
+
+## Build
+
+    py build.py
+
+writes `dist/x-video-gate.zip` from the `extension/` folder.
