@@ -289,6 +289,18 @@
     setTimeout(run, 250);
   }
 
+  // A finger that lands on a cover is the page's to scroll with. X never sees
+  // the touch at all, so its handlers can't treat it as a drag on the video
+  // and cancel the scroll. Registered on window in the capture phase, so it
+  // runs before any of X's listeners, and passive, so it never delays the
+  // scroll. A tap still becomes a click on the Play button: stopping these
+  // events doesn't stop the browser from turning a tap into a click.
+  for (const t of ["touchstart", "touchmove", "touchend", "pointerdown", "pointermove", "pointerup"]) {
+    window.addEventListener(t, (e) => {
+      if (e.target instanceof Element && e.target.closest(".xvg-overlay")) e.stopImmediatePropagation();
+    }, { capture: true, passive: true });
+  }
+
   // Hard stop: any play attempt on a non-allowed video is cancelled immediately.
   const guard = (e) => {
     const v = e.target;

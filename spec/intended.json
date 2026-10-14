@@ -253,6 +253,12 @@
           "cover is shorter than 130 px",
           "same",
           "only the button is shown, smaller"
+        ],
+        [
+          "BLOCKED_*",
+          "finger lands on the cover and swipes",
+          "same",
+          "the page scrolls exactly as it does anywhere else; X never sees the touch"
         ]
       ],
       "invariants": [
@@ -345,7 +351,8 @@
     "A stored allowlist entry that the current rules reject must be deleted by hand before Save works; the message names it",
     "Leaving the popup during the wait cancels it (the title says to keep it open); taps at the end of the wait land on 'Keep blocking' by design",
     "Follow changes made in another tab or app are picked up only when X sends fresh data or the page reloads",
-    "Account names on one line separated by spaces are refused; one per line or comma-separated"
+    "Account names on one line separated by spaces are refused; one per line or comma-separated",
+    "Real finger scrolling cannot be driven in the test browser (Chrome ignores synthetic touch gestures there); it is verified at the event level only: no touch from a cover reaches X's listeners and nothing cancels it"
   ],
   "rule": "Every user action in every state has an outcome the user can SEE. 'Nothing happens' alone is never acceptable: the control looks inactive, or it says why, or it is a bug."
 }

@@ -5,6 +5,7 @@
   background: #0f1419; color: #e7e9ea; padding: 16px; text-align: center;
   font: 600 14px/1.35 -apple-system, "Segoe UI", Roboto, sans-serif;
   border-radius: inherit; cursor: default;
+  touch-action: manipulation; /* pan and zoom as on the rest of the page */
 }
 .xvg-msg { opacity: .85; max-width: 90%; }
 .xvg-btn {
