@@ -1,0 +1,24 @@
+import { launch, mobile, sleep } from './lib.mjs';
+setTimeout(() => { console.log('TIMEOUT'); process.exit(1); }, 100000);
+const { browser, id } = await launch();
+const page = await browser.newPage(); await page.setViewport({ width: 340, height: 460 });
+page.on('pageerror', e => console.log('PAGEERROR', e.message));
+await page.goto(`chrome-extension://${id}/popup.html`);
+console.log('at load: inputs disabled =', await page.evaluate(() => ['enabled', 'allowlist', 'save'].map(i => document.getElementById(i).disabled).join(',')));
+await sleep(900);
+const s = () => page.evaluate(() => new Promise(r => chrome.storage.local.get('settings', x => r(JSON.stringify({ form: !document.getElementById('form').hidden, box: document.getElementById('enabled').checked, list: document.getElementById('allowlist').value, dirty: document.getElementById('dirty').style.visibility, note: document.getElementById('saved').style.visibility === 'visible' ? document.getElementById('saved').textContent : '', stored: x.settings || null })))));
+console.log('loaded                 ', await s());
+await page.evaluate(() => { const t = document.getElementById('allowlist'); t.value = 'https://x.com/NASA/status/123\nJohn Smith\n@good_one'; t.dispatchEvent(new Event('input')); }); console.log('typed, unsaved          ', await s());
+await page.click('#save'); await sleep(400); console.log('save with a bad entry   ', await s());
+await page.evaluate(() => { const t = document.getElementById('allowlist'); t.value = 'x.com/NASA\n@good_one'; t.dispatchEvent(new Event('input')); });
+await page.click('#save'); await sleep(750); console.log('save link + handle      ', await s(), '|', await page.$eval('#gate-msg', e => e.textContent));
+await page.click('#gate-no'); await sleep(750); console.log('keep blocking           ', await s());
+await page.click('#enabled'); console.log('untick (unsaved)        ', await s());
+await page.click('#save'); await sleep(750); await page.click('#gate-yes'); await sleep(300);
+console.log('wait title              ', await page.$eval('#gate-title', e => e.textContent));
+await page.screenshot({ path: '../previews/12_wait_keep_open.png' });
+await page.click('#gate-no'); await sleep(750); console.log('keep blocking mid-wait  ', await s());
+await page.screenshot({ path: '../previews/13_not_saved_yet.png' });
+// stale-tab banner: an X tab with a live blocker should NOT show it; test the query path does not throw
+console.log('stale banner hidden on a non-X tab =', await page.$eval('#stale', e => e.hidden));
+await browser.close(); process.exit(0);

@@ -18,6 +18,11 @@
   #saved { text-align: center; margin-top: 8px; color: #00ba7c; visibility: hidden; }
   #saved.bad { color: #f4212e; }
   .settling button { opacity: .5; pointer-events: none; }
+  #dirty { visibility: hidden; margin-top: 8px; text-align: center; color: #ffd400; opacity: 1; }
+  #dirty + button { margin-top: 4px; }
+  #stale { background: #3a2e00; border: 1px solid #ffd400; border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+  #stale button { margin-top: 8px; }
+  textarea:disabled, input:disabled { opacity: .5; }
   [hidden] { display: none !important; }
   #gate-msg { opacity: .85; min-height: 60px; }
   button:disabled { opacity: .5; }
@@ -30,12 +35,16 @@
 </head>
 <body>
   <h1>X Video Gate</h1>
-  <div id="form">
-  <label class="row">Block videos from non-followed accounts <input type="checkbox" id="enabled"></label>
-  <div style="margin-top:8px">Always allow these accounts
-    <div class="hint">One handle per line, with or without @</div>
-    <textarea id="allowlist" spellcheck="false" autocapitalize="off"></textarea>
+  <div id="stale" hidden>This X tab was open before the extension started, so nothing is blocked in it yet.
+    <button id="reload" type="button">Reload this tab</button>
   </div>
+  <div id="form">
+  <label class="row">Block videos from non-followed accounts <input type="checkbox" id="enabled" disabled></label>
+  <div style="margin-top:8px">Always allow these accounts
+    <div class="hint">One account per line: @name, name, or a profile link</div>
+    <textarea id="allowlist" spellcheck="false" autocapitalize="off" disabled></textarea>
+  </div>
+  <div id="dirty" class="hint">Not saved yet</div>
   <button id="save" type="button" disabled>Save</button>
   <div id="saved" role="status">Saved</div>
   </div>

@@ -1,0 +1,12 @@
+import { launch, mobile, sleep } from './lib.mjs';
+setTimeout(() => { console.log('TIMEOUT'); process.exit(1); }, 60000);
+const { browser } = await launch();
+const MID = '2110094814733651969';
+const rec = { tweetId: '2110094874024219133', mediaId: MID, thumb: 'https://pbs.twimg.com/amplify_video_thumb/' + MID + '/img/mi2EnXdCG2jxU1NW', kind: 'video', screenName: 'NASA', following: false, isMe: false, text: 't', variants: [{ url: 'https://video.twimg.com/amplify_video/' + MID + '/vid/avc1/1280x720/TSbz_WE8fV_mdDmj.mp4', bitrate: 1 }] };
+const page = await browser.newPage(); page.on('console', m => { if (m.text().includes('XVGDBG')) console.log(m.text()); }); await mobile(page); await page.goto('https://x.com/NASA', { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(7000);
+await page.evaluate(r => document.dispatchEvent(new CustomEvent('xvg:media', { detail: JSON.stringify([r]) })), rec); await sleep(500);
+const n = () => browser.targets().filter(t => t.type() === 'page' && t.url().includes('player.html')).length;
+console.log('before:', n(), 'buttons on page:', await page.evaluate(() => document.querySelectorAll('.xvg-btn').length));
+const r = await page.evaluate(async MID => { const v = [...document.querySelectorAll('video')].find(v => (v.poster || '').includes(MID)); const b = (v.closest('[data-testid="videoPlayer"],[data-testid="videoComponent"]') || v.parentElement).querySelector('.xvg-btn'); b.click(); const t = performance.now(); while (performance.now() - t < 120) {} b.click(); return 'clicked twice'; }, MID);
+await sleep(3000); console.log(r, '-> player tabs:', n());
+await browser.close(); process.exit(0);

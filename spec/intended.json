@@ -46,7 +46,7 @@
           "CONFIRM1",
           "keep blocking",
           "FORM",
-          "edits discarded, form shows saved settings"
+          "the blocking switch returns to the stored value; typed accounts are kept and marked 'Not saved yet'"
         ],
         [
           "WAIT",
@@ -64,7 +64,7 @@
           "WAIT",
           "keep blocking",
           "FORM",
-          "countdown cancelled, edits discarded"
+          "countdown cancelled; switch returns to stored value, typed accounts kept"
         ],
         [
           "CONFIRM2",
@@ -76,7 +76,7 @@
           "CONFIRM2",
           "keep blocking",
           "FORM",
-          "edits discarded, nothing stored"
+          "nothing stored; switch returns to stored value, typed accounts kept"
         ],
         [
           "FORM|CONFIRM1|WAIT|CONFIRM2",
@@ -88,13 +88,43 @@
           "CLOSED",
           "open, before saved settings have loaded",
           "FORM",
-          "Save is disabled until they load"
+          "checkbox, text box and Save are all visibly disabled until they load; if they cannot be read, a message says so"
         ],
         [
           "FORM|CONFIRM1|CONFIRM2",
           "click on Save / Yes / Keep blocking within 0.6 s of a switch between form and gate (or of the Yes button unlocking)",
           "same",
-          "ignored: the 2nd half of a double click answers nothing. Not applied when the popup first opens, nor to the checkbox or text box"
+          "ignored, and the buttons are visibly dimmed for that moment"
+        ],
+        [
+          "FORM",
+          "edit so the form differs from what is stored",
+          "FORM",
+          "'Not saved yet' shows until saved or reverted"
+        ],
+        [
+          "FORM",
+          "save with an entry that cannot be an account name",
+          "FORM",
+          "nothing stored, no gate; message names the bad entry"
+        ],
+        [
+          "FORM",
+          "save, storage read or write fails or never answers",
+          "FORM",
+          "red message says it could not be read / saved"
+        ],
+        [
+          "FORM",
+          "open while the current X tab has no blocker in it (opened before install or update)",
+          "FORM",
+          "banner explains and offers 'Reload this tab'"
+        ],
+        [
+          "WAIT",
+          "(display)",
+          "WAIT",
+          "title tells the user to keep the popup open"
         ]
       ],
       "invariants": [
@@ -108,7 +138,8 @@
         "Double click on Save [loosening] ends in CONFIRM1, not WAIT",
         "Double click on the final yes stores once and ends in FORM with nothing further triggered",
         "If the write to storage fails, the popup does not treat the change as saved",
-        "Opening the gate always cancels any countdown still running from an earlier one"
+        "Opening the gate always cancels any countdown still running from an earlier one",
+        "Account entries accept @name, name or a profile link, are stored lower-case without @, and anything else is refused with a message"
       ]
     },
     {
@@ -180,6 +211,48 @@
           "X removes or swaps the <video> element",
           "gone / re-evaluated",
           "no orphan overlay left; the button acts on the current element"
+        ],
+        [
+          "BLOCKED_*",
+          "tap overlay outside the button",
+          "same",
+          "(addition) the Play button pulses once, so the tap is visibly acknowledged"
+        ],
+        [
+          "BLOCKED_*",
+          "tap 'Play in new tab', tab could not be created",
+          "same",
+          "overlay says so and the button works again at once"
+        ],
+        [
+          "BLOCKED_*",
+          "tap 'Play in new tab' on a page that outlived an extension update",
+          "same",
+          "overlay says to reload the page"
+        ],
+        [
+          "BLOCKED_*",
+          "tap 'Play in new tab' succeeds after an earlier failure note",
+          "same",
+          "the note is replaced by the normal message"
+        ],
+        [
+          "BLOCKED_KNOWN",
+          "user presses X's Follow on the author",
+          "FREE",
+          "uncovered without a reload (depends on X's follow reply naming the account; unverified live)"
+        ],
+        [
+          "FREE",
+          "user presses X's Unfollow on the author",
+          "BLOCKED_KNOWN",
+          "covered without a reload (same caveat)"
+        ],
+        [
+          "BLOCKED_*",
+          "cover is shorter than 130 px",
+          "same",
+          "only the button is shown, smaller"
         ]
       ],
       "invariants": [
@@ -237,6 +310,18 @@
           "two quality switches before the first has loaded",
           "PLAYING(last picked)",
           "position and play/pause state are those from before the first switch"
+        ],
+        [
+          "PLAYING(q)",
+          "file fails to load",
+          "PLAYING(next quality) or FAILED",
+          "falls to the next quality; with none left, a message says it couldn't be loaded"
+        ],
+        [
+          "PLAYING(q)",
+          "loading stalls for 10 s",
+          "PLAYING(q)",
+          "'Still loading' notice until it moves again"
         ]
       ],
       "invariants": [
@@ -251,6 +336,16 @@
     "Caches of who-posted-what grow for the life of the tab",
     "A pass that expires while its video is playing does not stop it at that instant; it is re-blocked at the next scan",
     "If X's data names two different authors for the same media (a repost), the one processed last wins",
-    "Whether X has capture-phase tap handlers that still see taps on the overlay is not checked on the logged-in app"
-  ]
+    "Whether X has capture-phase tap handlers that still see taps on the overlay is not checked on the logged-in app",
+    "A video that is not inside a post (own upload preview, DMs) is covered as 'not verified' and may have nothing to open; we keep failing closed because the full-screen swipe viewer is not inside a post either",
+    "When X gives no direct file, Play opens the X post page (not the bare player) and the video is covered again after 15 minutes",
+    "Edits are lost if the popup is dismissed without saving; the 'Not saved yet' hint is the only warning",
+    "The stale-tab banner, the Follow/Unfollow hook and the two Play-button failure messages are not verified in a live browser",
+    "The reload banner for a tab opened before install appears only in the popup, and only for the front tab",
+    "A stored allowlist entry that the current rules reject must be deleted by hand before Save works; the message names it",
+    "Leaving the popup during the wait cancels it (the title says to keep it open); taps at the end of the wait land on 'Keep blocking' by design",
+    "Follow changes made in another tab or app are picked up only when X sends fresh data or the page reloads",
+    "Account names on one line separated by spaces are refused; one per line or comma-separated"
+  ],
+  "rule": "Every user action in every state has an outcome the user can SEE. 'Nothing happens' alone is never acceptable: the control looks inactive, or it says why, or it is a bug."
 }

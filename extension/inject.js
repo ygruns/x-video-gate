@@ -94,6 +94,14 @@
     if (!text || text[0] !== "{") return;
     let data;
     try { data = JSON.parse(text); } catch { return; }
+    // The reply to pressing Follow / Unfollow is the user it was pressed on.
+    const f = url.match(/friendships\/(create|destroy)\.json/);
+    if (f && data.screen_name) {
+      document.dispatchEvent(new CustomEvent("xvg:follow", {
+        detail: JSON.stringify({ screenName: data.screen_name, following: f[1] === "create" }),
+      }));
+      return;
+    }
     const out = [];
     walk(data, out, viewerId(), 0);
     if (out.length) {

@@ -1,0 +1,1519 @@
+{
+ "extension_version": "1.4.0",
+ "control_census": [
+  {
+   "component": "popup",
+   "control_or_input": "Blocking checkbox, allowlist box, Save",
+   "state": "before saved settings have loaded",
+   "what_the_user_sees_happen": "All three greyed out; if the read has not answered after 4 s, red 'Couldn't read your settings. Close this and open it again.' stays on screen",
+   "class": "visibly_disabled",
+   "source": "popup.html:25,28,42,45,48; popup.js:11-23",
+   "why_it_matters": "A read that answers after the 4 s clears the message and enables the form after all."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Blocking checkbox, allowlist box, Save",
+   "state": "settings could not be read",
+   "what_the_user_sees_happen": "Greyed out, red 'Couldn't read your settings. Close this and open it again.' stays on screen",
+   "class": "visibly_disabled",
+   "source": "popup.js:16-19",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Blocking checkbox (or its label)",
+   "state": "form",
+   "what_the_user_sees_happen": "Tick changes and a yellow 'Not saved yet' appears above Save; blocking itself is unchanged until Save",
+   "class": "acts",
+   "source": "popup.js:71-77; popup.html:21,47",
+   "why_it_matters": "Still not a live switch, but now says so."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: typing",
+   "state": "form",
+   "what_the_user_sees_happen": "'Not saved yet' appears once the parsed list differs from the stored one. Nothing marks an entry as invalid while typing",
+   "class": "acts",
+   "source": "popup.js:51-63,71-78",
+   "why_it_matters": "Invalid entries are only reported after pressing Save."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: a display name with a space ('John Smith')",
+   "state": "form, then Save",
+   "what_the_user_sees_happen": "On Save: red 'Not an account name: John Smith'; nothing saved",
+   "class": "acts",
+   "source": "popup.js:53-59,190-192",
+   "why_it_matters": "Entries are now split on line breaks and commas only."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: a profile link with https://",
+   "state": "form, then Save",
+   "what_the_user_sees_happen": "Accepted as that account; after saving the box shows it as @name",
+   "class": "acts",
+   "source": "popup.js:54-58,96",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: a link without https:// ('x.com/name')",
+   "state": "form, then Save",
+   "what_the_user_sees_happen": "Accepted as that account",
+   "class": "acts",
+   "source": "popup.js:55",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: a link to an X page that is not a profile ('x.com/i/status/123', 'x.com/home')",
+   "state": "form, then Save",
+   "what_the_user_sees_happen": "On Save: red 'Not an account name: <link>' for the thirteen listed X paths; a post link of the form x.com/name/status/... is accepted as @name",
+   "class": "acts",
+   "source": "popup.js:44-45,59",
+   "why_it_matters": "The list is fixed: other X pages (bookmarks, lists, communities, ...) still pass as accounts, and a real account whose handle is on the list (@home, @share, @search, ...) can no longer be added at all."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: Enter",
+   "state": "form",
+   "what_the_user_sees_happen": "New line",
+   "class": "acts",
+   "source": "popup.html:45",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Enter key elsewhere in the form",
+   "state": "form",
+   "what_the_user_sees_happen": "Nothing",
+   "class": "undefined",
+   "source": "popup.html:41-50",
+   "why_it_matters": "No default button."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, nothing changed",
+   "what_the_user_sees_happen": "'Saved' for 2 s",
+   "class": "acts",
+   "source": "popup.js:89-109,182-198",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, change only tightens",
+   "what_the_user_sees_happen": "'Saved' for 2 s, list rewritten as @name lines, applied in open X tabs",
+   "class": "acts",
+   "source": "popup.js:92-98,197",
+   "why_it_matters": "Still no confirmation or undo for clearing the list."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, change loosens",
+   "what_the_user_sees_happen": "Gate: 'Are you sure? This will ...'",
+   "class": "acts",
+   "source": "popup.js:144-154,195-196",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, at least one entry is not a handle",
+   "what_the_user_sees_happen": "Red 'Not an account name: <entries>' for 6 s; nothing at all is saved, including a changed tick",
+   "class": "acts",
+   "source": "popup.js:190-193,108",
+   "why_it_matters": "The message disappears after 6 s and the offending text is not highlighted in the box; with many bad entries it is one long centred line."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, a stored entry fails the current rules (a link saved by 1.3, or 'i' / 'home' etc. saved by the previous 1.4.0 build)",
+   "what_the_user_sees_happen": "On opening, 'Not saved yet' is already showing although nothing was touched; every Save answers 'Not an account name: @https://...' until the user deletes that line",
+   "class": "undefined",
+   "source": "popup.js:39,44-45,55-59,71-75,190-193",
+   "why_it_matters": "No migration: fill() prefixes '@', which also defeats the link pattern. All saving is blocked by data the user did not just type."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, first 0.6 s after returning from the gate",
+   "what_the_user_sees_happen": "Dimmed; tap ignored",
+   "class": "visibly_disabled",
+   "source": "popup.html:20; popup.js:120-130,183",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, storage read answers with an error",
+   "what_the_user_sees_happen": "Red 'Couldn't read your settings. Try again.'",
+   "class": "acts",
+   "source": "popup.js:187",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, storage read never answers",
+   "what_the_user_sees_happen": "Any old message vanishes; then nothing",
+   "class": "fails_silently",
+   "source": "popup.js:184-186",
+   "why_it_matters": "The write has a 4 s give-up timer; the read before it has none."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save",
+   "state": "form, write fails or does not answer within 4 s",
+   "what_the_user_sees_happen": "Red 'Couldn't save. Try again.'; 'Not saved yet' stays",
+   "class": "acts",
+   "source": "popup.js:91-94",
+   "why_it_matters": "If the write lands after the 4 s, the red text is replaced by green 'Saved' and the form is refilled, possibly while the user is already retrying."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Save, double click",
+   "state": "form, non-loosening",
+   "what_the_user_sees_happen": "'Saved' once (two identical writes)",
+   "class": "acts",
+   "source": "popup.js:182-198",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Keep blocking",
+   "state": "gate, first 0.6 s of 'Are you sure?' / 'Really sure?'",
+   "what_the_user_sees_happen": "Dimmed; tap ignored",
+   "class": "visibly_disabled",
+   "source": "popup.js:180; popup.html:20",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Keep blocking",
+   "state": "gate, any stage",
+   "what_the_user_sees_happen": "Back to the form: the tick returns to the stored value, typed accounts stay in the box, 'Not saved yet' shows",
+   "class": "acts",
+   "source": "popup.js:134-140",
+   "why_it_matters": "The declined accounts are still in the box, so the next Save for anything else opens the gate again until the user deletes them by hand."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Yes, continue",
+   "state": "gate 'Are you sure?' (after 0.6 s)",
+   "what_the_user_sees_happen": "Title 'Wait. Keep this open.', button counts 'Wait 15s' down",
+   "class": "acts",
+   "source": "popup.js:155-176",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Yes, continue / Yes, do it",
+   "state": "first 0.6 s after appearing",
+   "what_the_user_sees_happen": "Dimmed; tap ignored",
+   "class": "visibly_disabled",
+   "source": "popup.js:156,173; popup.html:20",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "'Wait Ns' button",
+   "state": "gate wait",
+   "what_the_user_sees_happen": "Greyed, counting",
+   "class": "visibly_disabled",
+   "source": "popup.js:160-163",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Yes, do it",
+   "state": "gate 'Really sure?'",
+   "what_the_user_sees_happen": "Form returns; 'Saved', or red 'Couldn't save. Try again.'",
+   "class": "acts",
+   "source": "popup.js:173,89-98",
+   "why_it_matters": "'Try again' means the whole gate again."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Tapping the countdown button's spot when it ends",
+   "state": "gate wait -> 'Really sure?'",
+   "what_the_user_sees_happen": "Buttons have swapped: the tap hits Keep blocking and the gate closes (typed accounts kept)",
+   "class": "acts",
+   "source": "popup.js:169-172; popup.html:30-31",
+   "why_it_matters": "Deliberate; nothing on screen says the buttons moved."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Tab key",
+   "state": "gate 'Really sure?'",
+   "what_the_user_sees_happen": "Focus order is Keep blocking, then Yes - opposite to what is drawn",
+   "class": "acts",
+   "source": "popup.html:30-31,54-55",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Stale-tab banner",
+   "state": "popup opened on an X tab where the blocker is not running",
+   "what_the_user_sees_happen": "Yellow box: 'This X tab was open before the extension started, so nothing is blocked in it yet.' with 'Reload this tab'",
+   "class": "acts",
+   "source": "popup.js:27-35; popup.html:23,38-40",
+   "why_it_matters": "Only checked for the tab in front, only when the popup is opened. After an extension UPDATE the old page still covers videos (with old settings), so 'nothing is blocked' is untrue there. Also shown if the popup is opened while the X tab is still loading."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Stale-tab banner",
+   "state": "popup opened as its own page/tab (some mobile browsers), or on a non-X tab",
+   "what_the_user_sees_happen": "No banner",
+   "class": "undefined",
+   "source": "popup.js:27-29",
+   "why_it_matters": "The 'active tab' is then the popup itself; stale X tabs are never mentioned. Browser-dependent."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Reload this tab",
+   "state": "banner showing",
+   "what_the_user_sees_happen": "The X tab reloads and the banner disappears",
+   "class": "acts",
+   "source": "popup.js:33",
+   "why_it_matters": "No warning that anything being written on X is lost. The banner is hidden even if the reload did not happen (result not checked) and is not re-checked afterwards."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Reload this tab",
+   "state": "during the 0.6 s settle window",
+   "what_the_user_sees_happen": "Dimmed and not tappable (shares the generic button rule)",
+   "class": "visibly_disabled",
+   "source": "popup.html:20,24",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Dismiss popup (tap outside, Esc, switch app)",
+   "state": "form with 'Not saved yet'",
+   "what_the_user_sees_happen": "Closes; edits are gone on reopening",
+   "class": "undefined",
+   "source": "popup.js:71-78",
+   "why_it_matters": "The hint warns beforehand; nothing at the moment of closing."
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Dismiss popup",
+   "state": "gate, any stage",
+   "what_the_user_sees_happen": "Closes; the wait is thrown away. The wait screen now says 'Wait. Keep this open.'",
+   "class": "acts",
+   "source": "popup.js:142-143,159",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Second popup at the same time",
+   "state": "any",
+   "what_the_user_sees_happen": "Each shows its own snapshot; 'Not saved yet' is judged against that snapshot",
+   "class": "acts",
+   "source": "popup.js:20,71-75,188",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Rotate / resize",
+   "state": "any",
+   "what_the_user_sees_happen": "Reflows",
+   "class": "acts",
+   "source": "popup.html:8-33",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: tap",
+   "state": "covered, normal size",
+   "what_the_user_sees_happen": "The Play button gives a short pulse; nothing else",
+   "class": "acts",
+   "source": "content.js:159-170; content.css:15-16",
+   "why_it_matters": "A 12% pulse for a third of a second with no words; it does not say why the post did not open. No reduced-motion handling."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: tap",
+   "state": "covered, small tile",
+   "what_the_user_sees_happen": "Same pulse on the small button",
+   "class": "acts",
+   "source": "content.js:164-197; content.css:18-21",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: double tap",
+   "state": "covered",
+   "what_the_user_sees_happen": "Two pulses",
+   "class": "acts",
+   "source": "content.js:164-170",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: long-press / right-click",
+   "state": "covered",
+   "what_the_user_sees_happen": "Browser context menu",
+   "class": "undefined",
+   "source": "content.js:160",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: middle-click / ctrl-click",
+   "state": "covered",
+   "what_the_user_sees_happen": "Whatever X or an enclosing link does",
+   "class": "undefined",
+   "source": "content.js:160",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Overlay surface: swipe / scroll",
+   "state": "covered",
+   "what_the_user_sees_happen": "Page scrolls",
+   "class": "acts",
+   "source": "content.js:157-161",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "covered, direct file known",
+   "what_the_user_sees_happen": "New tab with only that video; an older notice on the cover is cleared",
+   "class": "acts",
+   "source": "content.js:173-189,239-260; background.js:17-20",
+   "why_it_matters": "Between tap and tab there is no 'opening...' state."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "covered, only a post id known",
+   "what_the_user_sees_happen": "New tab on the X post page (full layout) with that post's video uncovered for 15 minutes",
+   "class": "acts",
+   "source": "background.js:21-23; content.js:119-122",
+   "why_it_matters": "Unexplained difference from the player; covered again after 15 minutes even mid-watch."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab' second tap",
+   "state": "within 1.5 s of a sent tap",
+   "what_the_user_sees_happen": "Nothing",
+   "class": "silently_ignored",
+   "source": "content.js:176",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab' later",
+   "state": "after 1.5 s",
+   "what_the_user_sees_happen": "Another tab with the same video",
+   "class": "acts",
+   "source": "content.js:176-189",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "covered, neither file nor post id",
+   "what_the_user_sees_happen": "'Can't open this one in a new tab'",
+   "class": "acts",
+   "source": "content.js:191,243",
+   "why_it_matters": "Dead end with no reason or alternative."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "stale page (extension updated, reloaded, disabled, removed)",
+   "what_the_user_sees_happen": "'The extension was updated. Reload this page.'",
+   "class": "acts",
+   "source": "content.js:190,256-258",
+   "why_it_matters": "Wrong wording for disable/remove."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "background could not save the link or create the tab, or did not answer",
+   "what_the_user_sees_happen": "'Couldn't open the tab. Tap again.' (when the answer arrives)",
+   "class": "acts",
+   "source": "content.js:184,255; background.js:12-15,25",
+   "why_it_matters": "If the answer never arrives nothing is shown."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab'",
+   "state": "small tile, any of the three failures above",
+   "what_the_user_sees_happen": "The notice appears in small type above the button",
+   "class": "acts",
+   "source": "content.js:179-191,197; content.css:19-20",
+   "why_it_matters": "In a very short tile the note plus button can still be clipped (overflow hidden). The author / reason line stays hidden in small tiles by design."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "'Play in new tab' by keyboard",
+   "state": "covered",
+   "what_the_user_sees_happen": "Same as a tap",
+   "class": "acts",
+   "source": "content.js:173",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Covered video / X's play shortcuts",
+   "state": "covered",
+   "what_the_user_sees_happen": "Nothing visible",
+   "class": "silently_ignored",
+   "source": "content.js:293-304",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "A video that has just been uncovered",
+   "state": "allowed after cover",
+   "what_the_user_sees_happen": "Visible, paused; user presses play",
+   "class": "acts",
+   "source": "content.js:219-235",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "An allowed video",
+   "state": "never covered",
+   "what_the_user_sees_happen": "Plays as on plain X",
+   "class": "acts",
+   "source": "content.js:293-300",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "X's Follow button",
+   "state": "author's video covered, pressed in this tab",
+   "what_the_user_sees_happen": "Once X's reply arrives the cover disappears (video stays paused)",
+   "class": "acts",
+   "source": "inject.js:97-104; content.js:33-45",
+   "why_it_matters": "Depends on X using a friendships/create.json reply that contains screen_name. A follow REQUEST to a protected account is treated as following."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "X's Unfollow button",
+   "state": "author's videos allowed, pressed in this tab",
+   "what_the_user_sees_happen": "Their loaded videos are paused and covered at once",
+   "class": "acts",
+   "source": "inject.js:97-104; content.js:33-45",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Follow / unfollow done in another tab, the app, or by blocking the account",
+   "state": "X page open",
+   "what_the_user_sees_happen": "No change here until X sends fresh data or the page is reloaded",
+   "class": "undefined",
+   "source": "inject.js:98; content.js:33-45",
+   "why_it_matters": "The hook is per page and only for those two requests."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Browser Back / moving between X pages",
+   "state": "any",
+   "what_the_user_sees_happen": "Re-evaluated within half a second",
+   "class": "acts",
+   "source": "content.js:317-320",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Page reload",
+   "state": "any",
+   "what_the_user_sees_happen": "Re-evaluated; live pass applies again",
+   "class": "acts",
+   "source": "content.js:13-18,119",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Switch tabs and back",
+   "state": "any",
+   "what_the_user_sees_happen": "Covers stay correct",
+   "class": "acts",
+   "source": "content.js:281-290",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Rotate / resize",
+   "state": "covered",
+   "what_the_user_sees_happen": "Cover follows the box; normal-vs-small mode is re-decided at every check of the page (any DOM change), not on the resize itself",
+   "class": "undefined",
+   "source": "content.js:197",
+   "why_it_matters": "If X changes nothing in the DOM on rotation, the old mode stays until the next change. Width is still ignored: a tall narrow tile clips the button text."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Covered video that is not inside a post (own upload preview, direct message, other players)",
+   "state": "covered as 'account not verified'",
+   "what_the_user_sees_happen": "Play ends in 'Can't open this one in a new tab'; no other way to view it",
+   "class": "undefined",
+   "source": "content.js:88-96,191,208,243",
+   "why_it_matters": "Only escape is switching blocking off through the 15 s gate. Page-dependent."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Video on the pass page after 15 minutes",
+   "state": "watching",
+   "what_the_user_sees_happen": "Paused and covered at the next page change",
+   "class": "acts",
+   "source": "content.js:119",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Native video controls",
+   "state": "playing / paused",
+   "what_the_user_sees_happen": "Work normally",
+   "class": "acts",
+   "source": "player.html:28",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Play",
+   "state": "autoplay refused by the browser",
+   "what_the_user_sees_happen": "Poster and controls; no notice while paused",
+   "class": "acts",
+   "source": "player.js:53,70-74",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Play",
+   "state": "before the stored link is read",
+   "what_the_user_sees_happen": "Empty player",
+   "class": "silently_ignored",
+   "source": "player.js:24; player.html:28",
+   "why_it_matters": "Milliseconds."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Quality menu: another quality",
+   "state": "playing / paused",
+   "what_the_user_sees_happen": "Switches, keeps position and play state",
+   "class": "acts",
+   "source": "player.js:80-95",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Quality menu",
+   "state": "stalled while playing",
+   "what_the_user_sees_happen": "After 10 s: 'Still loading. Check your connection, or pick a lower quality above.' - or without the quality hint when there is only one file",
+   "class": "acts",
+   "source": "player.js:66-78; player.html:29",
+   "why_it_matters": "Still suggests a lower quality when the lowest is already selected."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Quality menu: a quality that failed earlier",
+   "state": "after automatic fallback",
+   "what_the_user_sees_happen": "Player jumps to another quality by itself",
+   "class": "acts",
+   "source": "player.js:56-64",
+   "why_it_matters": "Dead qualities stay listed."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Close",
+   "state": "any",
+   "what_the_user_sees_happen": "Tab closes",
+   "class": "acts",
+   "source": "player.js:7-13",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Browser Back",
+   "state": "any",
+   "what_the_user_sees_happen": "Browser-dependent",
+   "class": "undefined",
+   "source": "background.js:14",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Reload",
+   "state": "link still stored",
+   "what_the_user_sees_happen": "Restarts from the beginning at best quality",
+   "class": "acts",
+   "source": "player.js:24-53",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Reload",
+   "state": "link cleaned up, or storage unreadable",
+   "what_the_user_sees_happen": "'This video link has expired. Close this tab and tap Play on the post again.'",
+   "class": "acts",
+   "source": "player.js:25-29",
+   "why_it_matters": "Same text for a storage read error."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "'@name' label, post text",
+   "state": "any",
+   "what_the_user_sees_happen": "Nothing (plain text; long text ends in '...')",
+   "class": "silently_ignored",
+   "source": "player.js:31-38",
+   "why_it_matters": "No way from the player to the post, its replies or the like button."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Keyboard, long-press, double tap",
+   "state": "any",
+   "what_the_user_sees_happen": "Browser defaults only",
+   "class": "undefined",
+   "source": "player.js:1-97",
+   "why_it_matters": ""
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Rotate / resize",
+   "state": "any",
+   "what_the_user_sees_happen": "Scales",
+   "class": "acts",
+   "source": "player.html:8-19",
+   "why_it_matters": ""
+  },
+  {
+   "component": "extension as a whole",
+   "control_or_input": "Install / enable with X already open",
+   "state": "X tab from before",
+   "what_the_user_sees_happen": "Nothing is covered there; the page shows nothing. If the user opens the popup on that tab, a banner offers a reload",
+   "class": "acts",
+   "source": "manifest.json:9-22; popup.js:27-35",
+   "why_it_matters": "Help is only inside the popup, which a user who sees 'nothing happening' has no reason to open."
+  },
+  {
+   "component": "extension as a whole",
+   "control_or_input": "Disable or remove the extension with X open",
+   "state": "X tab with covers",
+   "what_the_user_sees_happen": "Covers stay and plays stay cancelled until reload; button says 'The extension was updated. Reload this page.'",
+   "class": "acts",
+   "source": "content.js:190,302-304",
+   "why_it_matters": ""
+  },
+  {
+   "component": "extension as a whole",
+   "control_or_input": "Toolbar icon",
+   "state": "any",
+   "what_the_user_sees_happen": "Popup opens; no badge",
+   "class": "acts",
+   "source": "manifest.json:23",
+   "why_it_matters": ""
+  },
+  {
+   "component": "popup",
+   "control_or_input": "Allowlist box: several names on one line separated by spaces",
+   "state": "form, then Save",
+   "what_the_user_sees_happen": "Red 'Not an account name: name1 name2'",
+   "class": "acts",
+   "source": "popup.js:53-59; popup.html:44",
+   "why_it_matters": "Worked in earlier versions; the hint does say one per line."
+  },
+  {
+   "component": "player tab",
+   "control_or_input": "Quality menu: another quality, and the new file stalls before it starts",
+   "state": "playing / paused",
+   "what_the_user_sees_happen": "Spinner only; the 'Still loading' notice never appears",
+   "class": "fails_silently",
+   "source": "player.js:73,84-95",
+   "why_it_matters": "Changing the source pauses the element until metadata arrives, and the notice is now suppressed whenever the element is paused. Introduced by the 'not while paused' edit."
+  }
+ ],
+ "failure_census": [
+  {
+   "operation": "popup: initial storage read - error",
+   "if_it_fails_or_never_returns": "Controls stay grey; sticky red 'Couldn't read your settings. Close this and open it again.'",
+   "class": "handled_with_feedback",
+   "source": "popup.js:13-19"
+  },
+  {
+   "operation": "popup: initial storage read - never answers",
+   "if_it_fails_or_never_returns": "After 4 s: sticky red 'Couldn't read your settings. Close this and open it again.'; a late answer clears it and enables the form",
+   "class": "handled_with_feedback",
+   "source": "popup.js:11-23"
+  },
+  {
+   "operation": "popup: tabs.query / ping to the X tab fails or is not answered in time",
+   "if_it_fails_or_never_returns": "Query error: no banner. Ping unanswered (page still loading, stale page): banner shown, even where covers are in fact present",
+   "class": "handled_silently",
+   "source": "popup.js:27-34"
+  },
+  {
+   "operation": "popup: tabs.reload fails",
+   "if_it_fails_or_never_returns": "Banner disappears anyway; tab unchanged",
+   "class": "unhandled",
+   "source": "popup.js:33"
+  },
+  {
+   "operation": "popup: storage read inside Save - error",
+   "if_it_fails_or_never_returns": "Red 'Couldn't read your settings. Try again.'",
+   "class": "handled_with_feedback",
+   "source": "popup.js:187"
+  },
+  {
+   "operation": "popup: storage read inside Save - never answers",
+   "if_it_fails_or_never_returns": "Old message hidden, then nothing",
+   "class": "unhandled",
+   "source": "popup.js:184-186"
+  },
+  {
+   "operation": "popup: storage write - error",
+   "if_it_fails_or_never_returns": "Red 'Couldn't save. Try again.'",
+   "class": "handled_with_feedback",
+   "source": "popup.js:94"
+  },
+  {
+   "operation": "popup: storage write - no answer in 4 s",
+   "if_it_fails_or_never_returns": "Red 'Couldn't save. Try again.'; a late success later flips it to 'Saved' and refills the form",
+   "class": "handled_with_feedback",
+   "source": "popup.js:91-98"
+  },
+  {
+   "operation": "popup: stored allowlist contains entries that are not handles (older version) or is not a list",
+   "if_it_fails_or_never_returns": "Bad entries: permanent 'Not saved yet' and every Save refused until removed by hand. Not a list: fill() throws, controls stay grey with no message",
+   "class": "unhandled",
+   "source": "popup.js:20-22,39,44-45,59,71-75,190-193"
+  },
+  {
+   "operation": "popup: countdown interval / settle timer",
+   "if_it_fails_or_never_returns": "Closed popup: lost. Late timer: buttons stay dim slightly longer",
+   "class": "handled_silently",
+   "source": "popup.js:120-126,158-176"
+  },
+  {
+   "operation": "content: initial storage read fails",
+   "if_it_fails_or_never_returns": "Defaults used (blocking on, no allowlist, no pass); no sign",
+   "class": "handled_silently",
+   "source": "content.js:13-18"
+  },
+  {
+   "operation": "content: xvg:media / xvg:follow detail not valid JSON, or follow without screen name",
+   "if_it_fails_or_never_returns": "Ignored",
+   "class": "handled_silently",
+   "source": "content.js:34-37,48-49"
+  },
+  {
+   "operation": "content: no record for a video",
+   "if_it_fails_or_never_returns": "Covered as 'Video blocked (account not verified as followed)'; no remedy offered",
+   "class": "handled_with_feedback",
+   "source": "content.js:81-97,208"
+  },
+  {
+   "operation": "content: record without screen name / without follow information",
+   "if_it_fails_or_never_returns": "'an account you don't follow'; treated as not followed unless an earlier record for the same media said followed",
+   "class": "handled_silently",
+   "source": "content.js:54-55,206; inject.js:29-31"
+  },
+  {
+   "operation": "content: no enclosing article / status link",
+   "if_it_fails_or_never_returns": "With no direct file: 'Can't open this one in a new tab'",
+   "class": "handled_with_feedback",
+   "source": "content.js:73-79,191,243"
+  },
+  {
+   "operation": "content: video without container",
+   "if_it_fails_or_never_returns": "Paused and muted but no cover drawn",
+   "class": "handled_silently",
+   "source": "content.js:146"
+  },
+  {
+   "operation": "content: container height is 0 or unknown when the cover is built",
+   "if_it_fails_or_never_returns": "Treated as a normal-size tile until a later check measures it",
+   "class": "handled_silently",
+   "source": "content.js:197"
+  },
+  {
+   "operation": "content: X renames its container test ids",
+   "if_it_fails_or_never_returns": "Cover goes on the video's direct parent",
+   "class": "handled_silently",
+   "source": "content.js:127-131"
+  },
+  {
+   "operation": "content: sendMessage throws (stale page)",
+   "if_it_fails_or_never_returns": "'The extension was updated. Reload this page.'",
+   "class": "handled_with_feedback",
+   "source": "content.js:190,256-258"
+  },
+  {
+   "operation": "content: background answers not-ok or the channel closes",
+   "if_it_fails_or_never_returns": "'Couldn't open the tab. Tap again.' (small type in small tiles)",
+   "class": "handled_with_feedback",
+   "source": "content.js:184,255"
+  },
+  {
+   "operation": "content: background never answers",
+   "if_it_fails_or_never_returns": "Nothing; button usable again after 1.5 s",
+   "class": "unhandled",
+   "source": "content.js:176,255"
+  },
+  {
+   "operation": "content: failure answer arrives after the cover was rebuilt or removed",
+   "if_it_fails_or_never_returns": "Notice is written into a node no longer on screen",
+   "class": "handled_silently",
+   "source": "content.js:179-184"
+  },
+  {
+   "operation": "content: animation frame never comes",
+   "if_it_fails_or_never_returns": "250 ms timer runs the check",
+   "class": "handled_silently",
+   "source": "content.js:285-289"
+  },
+  {
+   "operation": "content: pass expires",
+   "if_it_fails_or_never_returns": "Cover returns at the next check; no timer",
+   "class": "handled_silently",
+   "source": "content.js:119"
+  },
+  {
+   "operation": "content: popup ping on a stale page",
+   "if_it_fails_or_never_returns": "Not answered: popup shows the banner",
+   "class": "handled_with_feedback",
+   "source": "content.js:27-29; popup.js:30-32"
+  },
+  {
+   "operation": "background: saving the link or the pass fails",
+   "if_it_fails_or_never_returns": "Page is told not-ok: 'Couldn't open the tab. Tap again.'; no tab",
+   "class": "handled_with_feedback",
+   "source": "background.js:12-13,19-23"
+  },
+  {
+   "operation": "background: tab creation fails",
+   "if_it_fails_or_never_returns": "Page is told not-ok: same notice",
+   "class": "handled_with_feedback",
+   "source": "background.js:14"
+  },
+  {
+   "operation": "background: worker stopped before answering",
+   "if_it_fails_or_never_returns": "Channel closes: same notice",
+   "class": "handled_with_feedback",
+   "source": "background.js:27; content.js:255"
+  },
+  {
+   "operation": "background: clean-up read fails",
+   "if_it_fails_or_never_returns": "Skipped quietly",
+   "class": "handled_silently",
+   "source": "background.js:32-33"
+  },
+  {
+   "operation": "player: storage read fails or link missing",
+   "if_it_fails_or_never_returns": "'This video link has expired. Close this tab and tap Play on the post again.' (also for a read error)",
+   "class": "handled_with_feedback",
+   "source": "player.js:25-29"
+  },
+  {
+   "operation": "player: a file fails to load",
+   "if_it_fails_or_never_returns": "Next quality tried; none left: 'This video couldn't be loaded. Check your connection...' (the 'Still loading' line is hidden and suppressed)",
+   "class": "handled_with_feedback",
+   "source": "player.js:15-22,57-64,73"
+  },
+  {
+   "operation": "player: connection stalls",
+   "if_it_fails_or_never_returns": "While playing: 'Still loading...' after 10 s, no retry. While the element is paused - including during a quality switch before the new file's metadata - nothing",
+   "class": "handled_with_feedback",
+   "source": "player.js:66-78,91-95"
+  },
+  {
+   "operation": "player: file error mid-play",
+   "if_it_fails_or_never_returns": "Another quality starts from the beginning",
+   "class": "handled_silently",
+   "source": "player.js:57-64,83-90"
+  },
+  {
+   "operation": "player: autoplay refused",
+   "if_it_fails_or_never_returns": "Paused on poster; no notice",
+   "class": "handled_silently",
+   "source": "player.js:53,73-78"
+  },
+  {
+   "operation": "player: tabs.getCurrent returns nothing",
+   "if_it_fails_or_never_returns": "window.close() fallback, which may be refused",
+   "class": "handled_silently",
+   "source": "player.js:9-12"
+  },
+  {
+   "operation": "inject: follow reply has no screen_name, or X uses another request for follow",
+   "if_it_fails_or_never_returns": "No event: cover does not react to Follow/Unfollow",
+   "class": "handled_silently",
+   "source": "inject.js:98-104"
+  },
+  {
+   "operation": "inject: response read / JSON parse fails; data deeper than 60 levels",
+   "if_it_fails_or_never_returns": "Skipped; affected videos stay 'not verified'",
+   "class": "handled_silently",
+   "source": "inject.js:78,96,119"
+  },
+  {
+   "operation": "inject: twid cookie missing",
+   "if_it_fails_or_never_returns": "Own videos not recognised",
+   "class": "handled_silently",
+   "source": "inject.js:10-16,59"
+  },
+  {
+   "operation": "inject: browser ignores world: MAIN",
+   "if_it_fails_or_never_returns": "No data ever: every video 'not verified'",
+   "class": "unhandled",
+   "source": "manifest.json:14"
+  }
+ ],
+ "missing_states": [
+  {
+   "component": "extension as a whole",
+   "state_nobody_designed": "first run",
+   "what_happens_now": "No welcome or explanation; a reload hint exists only as a banner inside the popup for the tab in front",
+   "source": "popup.js:27-35; manifest.json:23"
+  },
+  {
+   "component": "extension as a whole",
+   "state_nobody_designed": "extension updated / disabled / removed with X open",
+   "what_happens_now": "Old page keeps covers and old settings. Popup banner says 'nothing is blocked in it yet' (untrue after an update); the cover button says 'The extension was updated' (untrue after disable)",
+   "source": "popup.html:38; content.js:190"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "loading",
+   "what_happens_now": "Greyed controls, no text or spinner",
+   "source": "popup.html:42-48"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "read never answers",
+   "what_happens_now": "Error text after 4 s; Save's own read still has no time limit",
+   "source": "popup.js:11-12,186"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "stored data from an older version that the new rules reject",
+   "what_happens_now": "'Not saved yet' on open; saving blocked until hand-edited",
+   "source": "popup.js:39,59,71-75,190"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "X pages outside the fixed list of thirteen; real accounts whose handle is on that list",
+   "what_happens_now": "The former pass as accounts; the latter cannot be added",
+   "source": "popup.js:44-45,59"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "many invalid entries",
+   "what_happens_now": "One long red line for 6 s; nothing highlighted",
+   "source": "popup.js:191,108"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "very long allowlist / long gate sentence",
+   "what_happens_now": "Box scrolls; gate sentence grows without limit",
+   "source": "popup.js:85,152"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "blocking currently off",
+   "what_happens_now": "Adding an account still needs the 15 s gate though it changes nothing",
+   "source": "popup.js:81-87"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "popup shown as a full page on a phone",
+   "what_happens_now": "Banner logic looks at the wrong tab; 'Keep this open' is easy to break by switching apps (whether the page survives is browser-dependent)",
+   "source": "popup.js:27-29,159"
+  },
+  {
+   "component": "popup",
+   "state_nobody_designed": "two popups",
+   "what_happens_now": "Independent snapshots",
+   "source": "popup.js:20,188"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "waiting for X's data",
+   "what_happens_now": "'account not verified' wording from the first instant; no 'checking'",
+   "source": "content.js:208"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "X data unavailable for good (format change, logged out, unsupported browser)",
+   "what_happens_now": "Everything but GIFs covered as 'not verified' with no cause or remedy",
+   "source": "content.js:110-124,208"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "small tile",
+   "what_happens_now": "Button only; failure notes shown in small type; author and reason never shown",
+   "source": "content.css:18-21; content.js:197"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "tile that changes size (rotate, resize, lazy layout), narrow tile",
+   "what_happens_now": "Mode follows the height at the next page check; width ignored; overflow clipped",
+   "source": "content.js:197; content.css:17"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "video outside a post",
+   "what_happens_now": "Covered; Play ends in 'Can't open this one in a new tab'",
+   "source": "content.js:191,243"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "follow changed elsewhere; follow request pending on a protected account",
+   "what_happens_now": "Not reflected / treated as followed",
+   "source": "inject.js:98-104"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "language and theme",
+   "what_happens_now": "English, dark, always",
+   "source": "content.js:156,190-191,206-208; content.css:5"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "between tapping Play and the tab appearing",
+   "what_happens_now": "No 'opening' state; if no answer ever comes, nothing",
+   "source": "content.js:185-189"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "two tabs using the 15-minute pass",
+   "what_happens_now": "Second replaces first",
+   "source": "background.js:22"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "many covered videos / slow phone",
+   "what_happens_now": "Every DOM change re-processes every video; a new video is untouched until the first check",
+   "source": "content.js:269-290"
+  },
+  {
+   "component": "player tab",
+   "state_nobody_designed": "loading",
+   "what_happens_now": "Black player titled 'Video'",
+   "source": "player.html:24,28"
+  },
+  {
+   "component": "player tab",
+   "state_nobody_designed": "already on the lowest quality while stalled; stall during a quality switch",
+   "what_happens_now": "Told to pick a lower quality; no notice at all during a switch",
+   "source": "player.js:69-74; player.html:29"
+  },
+  {
+   "component": "player tab",
+   "state_nobody_designed": "slow or metered connection",
+   "what_happens_now": "Starts at the highest bitrate",
+   "source": "player.js:52"
+  },
+  {
+   "component": "player tab",
+   "state_nobody_designed": "post with several videos",
+   "what_happens_now": "Only the tapped one",
+   "source": "content.js:239-254"
+  }
+ ],
+ "human_expectations": [
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Installs while X is open",
+   "what_they_would_expect_or_try": "Covers appear, or the page says to refresh",
+   "what_actually_happens": "Nothing on the page. Only if they open the popup on that tab: a banner with 'Reload this tab'",
+   "verdict": "unmet",
+   "source": "popup.js:27-35"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Opens the popup on that old X tab",
+   "what_they_would_expect_or_try": "An explanation",
+   "what_actually_happens": "Yellow banner and a reload button; after tapping it the tab reloads and covers appear",
+   "verdict": "met",
+   "source": "popup.js:30-33; popup.html:38-40"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Opens the popup as a full page on a phone browser",
+   "what_they_would_expect_or_try": "The same banner",
+   "what_actually_happens": "No banner: the popup looks at itself as the active tab (browser-dependent)",
+   "verdict": "unmet",
+   "source": "popup.js:27-29"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Scrolls a fresh X feed",
+   "what_they_would_expect_or_try": "Strangers' videos covered, followed ones play",
+   "what_actually_happens": "Yes, when X's data is seen",
+   "verdict": "met",
+   "source": "content.js:110-124"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Sees 'account not verified as followed' on someone they follow",
+   "what_they_would_expect_or_try": "A reason or a fix",
+   "what_actually_happens": "None; resolves by itself or stays",
+   "verdict": "surprising",
+   "source": "content.js:208"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Taps the covered area to open the post",
+   "what_they_would_expect_or_try": "The post opens",
+   "what_actually_happens": "The Play button pulses briefly; the post does not open",
+   "verdict": "surprising",
+   "source": "content.js:164-170"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Taps 'Play in new tab'",
+   "what_they_would_expect_or_try": "The video alone",
+   "what_actually_happens": "Player tab; one more tap if autoplay is refused",
+   "verdict": "met",
+   "source": "background.js:17-20; player.js:52-53"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Taps Play in a small grid tile and it fails",
+   "what_they_would_expect_or_try": "Some message",
+   "what_actually_happens": "A small-type note appears above the button",
+   "verdict": "met",
+   "source": "content.css:20; content.js:179-191"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Double-taps the button",
+   "what_they_would_expect_or_try": "One tab",
+   "what_actually_happens": "One tab",
+   "verdict": "met",
+   "source": "content.js:176"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Taps Play where X gave no file",
+   "what_they_would_expect_or_try": "The same player",
+   "what_actually_happens": "Full X post page in a new tab; pass lasts 15 minutes",
+   "verdict": "surprising",
+   "source": "background.js:21-23"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Is 15 minutes into a long video on that page",
+   "what_they_would_expect_or_try": "Keeps playing",
+   "what_actually_happens": "Paused and covered at the next page change",
+   "verdict": "unmet",
+   "source": "content.js:119"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Tap fails once ('Couldn't open the tab. Tap again.'), second tap works",
+   "what_they_would_expect_or_try": "Error goes away",
+   "what_actually_happens": "It does",
+   "verdict": "met",
+   "source": "content.js:185-189"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Wants to reply to or like what they watched",
+   "what_they_would_expect_or_try": "A link to the post",
+   "what_actually_happens": "None",
+   "verdict": "unmet",
+   "source": "player.js:31-38"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Follows the author to see the video",
+   "what_they_would_expect_or_try": "Cover goes away",
+   "what_actually_happens": "It does in this tab once X confirms; video is paused",
+   "verdict": "met",
+   "source": "inject.js:97-104; content.js:33-45"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Follows the author in the X app, then returns to the browser tab",
+   "what_they_would_expect_or_try": "Cover is gone",
+   "what_actually_happens": "Still covered until reload or fresh data",
+   "verdict": "unmet",
+   "source": "inject.js:98"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Unfollows an account",
+   "what_they_would_expect_or_try": "Its videos get covered",
+   "what_actually_happens": "They do, in this tab",
+   "verdict": "met",
+   "source": "content.js:33-45"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Wants to always allow an account from its covered video",
+   "what_they_would_expect_or_try": "A button on the cover",
+   "what_actually_happens": "Must open the popup and type the handle",
+   "verdict": "unmet",
+   "source": "content.js:154-156"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Unticks the blocking box",
+   "what_they_would_expect_or_try": "Blocking stops",
+   "what_actually_happens": "'Not saved yet' appears; Save, two confirmations and 15 s are still needed",
+   "verdict": "surprising",
+   "source": "popup.js:71-77,144-178"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Unticks and closes the popup",
+   "what_they_would_expect_or_try": "A warning",
+   "what_actually_happens": "The yellow hint was showing; closing itself is silent and nothing was saved",
+   "verdict": "surprising",
+   "source": "popup.js:71-76"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "During the 15 s wait, glances at another tab",
+   "what_they_would_expect_or_try": "Countdown continues",
+   "what_actually_happens": "Title said 'Wait. Keep this open.'; leaving still cancels everything",
+   "verdict": "surprising",
+   "source": "popup.js:142-143,159"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Changes their mind and taps 'Keep blocking'",
+   "what_they_would_expect_or_try": "Back to the form, edits intact",
+   "what_actually_happens": "Typed accounts stay, the tick returns to the saved value",
+   "verdict": "met",
+   "source": "popup.js:134-140"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Keeps tapping the countdown button",
+   "what_they_would_expect_or_try": "Eventually accepted",
+   "what_actually_happens": "Lands on 'Keep blocking'; gate closes",
+   "verdict": "surprising",
+   "source": "popup.js:169-172"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Pastes a profile link copied from the address bar with https://",
+   "what_they_would_expect_or_try": "Works",
+   "what_actually_happens": "Works",
+   "verdict": "met",
+   "source": "popup.js:54-58"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Types 'x.com/name' as the hint's 'profile link'",
+   "what_they_would_expect_or_try": "Works",
+   "what_actually_happens": "Accepted",
+   "verdict": "met",
+   "source": "popup.js:55"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Types the display name 'John Smith'",
+   "what_they_would_expect_or_try": "That person is allowed, or an error",
+   "what_actually_happens": "'Not an account name: John Smith'",
+   "verdict": "met",
+   "source": "popup.js:53-59,190-192"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Pastes a link to a post shared from the app (x.com/i/status/...)",
+   "what_they_would_expect_or_try": "The author is allowed, or an error",
+   "what_actually_happens": "'Not an account name: <link>'",
+   "verdict": "met",
+   "source": "popup.js:44-45,59"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Makes a typo with a stray character",
+   "what_they_would_expect_or_try": "Told which entry is wrong",
+   "what_actually_happens": "'Not an account name: ...' for 6 s; the entry is not marked in the box",
+   "verdict": "met",
+   "source": "popup.js:190-193"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Mistypes a handle with valid characters, saves, corrects it",
+   "what_they_would_expect_or_try": "Quick fix",
+   "what_actually_happens": "Correction is a new account: gate and 15 s again",
+   "verdict": "surprising",
+   "source": "popup.js:84"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Upgrades from the previous version with a pasted link in the list",
+   "what_they_would_expect_or_try": "Popup works as before",
+   "what_actually_happens": "'Not saved yet' on open and every Save refused until that line is deleted",
+   "verdict": "unmet",
+   "source": "popup.js:39,59,71-75,190-193"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Saves while storage is slow",
+   "what_they_would_expect_or_try": "Saved, or an error",
+   "what_actually_happens": "'Couldn't save. Try again.' after 4 s, which may turn into 'Saved' by itself later",
+   "verdict": "surprising",
+   "source": "popup.js:91-98"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Loses connection and taps Play",
+   "what_they_would_expect_or_try": "A clear message",
+   "what_actually_happens": "'This video couldn't be loaded. Check your connection, then close this tab and tap Play again.'",
+   "verdict": "met",
+   "source": "player.js:57-64"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Connection stalls mid-video",
+   "what_they_would_expect_or_try": "Told what is happening",
+   "what_actually_happens": "After 10 s: 'Still loading. Check your connection, or pick a lower quality above.'",
+   "verdict": "met",
+   "source": "player.js:66-78"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Phone refuses autoplay; they look at the poster for a while",
+   "what_they_would_expect_or_try": "Nothing until they press play",
+   "what_actually_happens": "Nothing until they press play",
+   "verdict": "met",
+   "source": "player.js:73"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Extension updates while X is open",
+   "what_they_would_expect_or_try": "Works or asks for refresh",
+   "what_actually_happens": "Tap on Play: 'The extension was updated. Reload this page.' (not visible in small tiles); popup banner offers reload",
+   "verdict": "met",
+   "source": "content.js:190; popup.js:30-33"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Turns the extension off to watch something",
+   "what_they_would_expect_or_try": "Covers disappear",
+   "what_actually_happens": "They stay until reload",
+   "verdict": "unmet",
+   "source": "content.js:302-304"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Tries to preview their own upload or a video in a direct message",
+   "what_they_would_expect_or_try": "It plays",
+   "what_actually_happens": "Covered; 'Can't open this one in a new tab'",
+   "verdict": "unmet",
+   "source": "content.js:191,243"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Rotates the phone on a media grid",
+   "what_they_would_expect_or_try": "Covers adapt",
+   "what_actually_happens": "Mode is re-decided at the next change on the page",
+   "verdict": "met",
+   "source": "content.js:197"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Uses X in another language",
+   "what_they_would_expect_or_try": "Overlay in that language",
+   "what_actually_happens": "English only",
+   "verdict": "unmet",
+   "source": "content.js:156,206-208"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Wants to allow a real account called @home or @share",
+   "what_they_would_expect_or_try": "It is accepted",
+   "what_actually_happens": "'Not an account name: @home'",
+   "verdict": "unmet",
+   "source": "popup.js:44-45,59"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Picks a lower quality on a bad connection and it hangs",
+   "what_they_would_expect_or_try": "Some message",
+   "what_actually_happens": "Spinner only",
+   "verdict": "unmet",
+   "source": "player.js:73,91-95"
+  }
+ ],
+ "previous_top": [
+  {
+   "item": "Videos that are not in a post (own upload preview, direct messages) or for which X's data never arrives are covered as 'not verified' with no remedy; Play can end in 'Can't open this one in a new tab' (content.js:191,208,243).",
+   "status": "still_present",
+   "reason": "Same logic and texts.",
+   "source": "content.js:191,208,243"
+  },
+  {
+   "item": "Typing a display name ('John Smith') allows two unrelated accounts (@john, @smith); a shared post link allows '@i'; 'x.com/name' without https is refused although the hint says 'a profile link' (popup.js:53-60; popup.html:44).",
+   "status": "partly",
+   "reason": "Display names and the listed X paths are refused, scheme-less links accepted. Left: the path list is fixed (other X pages still pass) and real accounts with a listed handle cannot be added.",
+   "source": "popup.js:44-63"
+  },
+  {
+   "item": "In small tiles the cover hides its text line, so every failure notice ('Can't open', 'Couldn't open the tab', 'extension was updated') and the reason for the cover are invisible; the mode is fixed when the cover is created (content.js:197,179-191; content.css:19).",
+   "status": "partly",
+   "reason": "Failure notes now show in small tiles and the mode is re-decided on every check; it does not react to a resize without a DOM change, and width is ignored.",
+   "source": "content.js:197; content.css:20"
+  },
+  {
+   "item": "Player shows 'Still loading. Check your connection, or pick a lower quality above.' when it should not: 10 s after the 'couldn't be loaded' error, while merely waiting for the user to press play, and when there is no quality menu (player.js:60,66-78; player.html:29).",
+   "status": "fixed",
+   "reason": "Not after a failure, not while paused, no quality hint with one file. Side effect: no notice during a stalled quality switch.",
+   "source": "player.js:15-22,69-75"
+  },
+  {
+   "item": "The 'reload this tab' help exists only inside the popup for the tab in front; a user who installs and sees nothing happen on X gets no hint, and on phones where the popup is its own page the banner never shows (popup.js:27-35).",
+   "status": "still_present",
+   "reason": "Banner logic unchanged.",
+   "source": "popup.js:27-35"
+  },
+  {
+   "item": "When X gave no file, Play opens the full X post page instead of the player, and the video is covered again after 15 minutes even mid-watch (background.js:21-23; content.js:119).",
+   "status": "still_present",
+   "reason": "Unchanged.",
+   "source": "background.js:21-23; content.js:119"
+  },
+  {
+   "item": "An older saved entry that the new rules reject (e.g. a pasted link) makes the popup open with 'Not saved yet' and refuses every Save until the user deletes that line (popup.js:39,71-75,190-193).",
+   "status": "still_present",
+   "reason": "No migration; entries such as 'i' or 'home' saved by the previous build are now rejected as well.",
+   "source": "popup.js:39,59,71-75,190-193"
+  },
+  {
+   "item": "Leaving the popup during the 15 s wait still cancels everything, and repeated taps at the end land on 'Keep blocking' (popup.js:142-143,159,169-172).",
+   "status": "still_present",
+   "reason": "Unchanged.",
+   "source": "popup.js:142-143,159,169-172"
+  },
+  {
+   "item": "Follow/unfollow made in the X app or another tab, or a pending follow request, is not reflected correctly until reload (inject.js:98-104).",
+   "status": "still_present",
+   "reason": "Unchanged.",
+   "source": "inject.js:98-104"
+  },
+  {
+   "item": "Storage reads that never answer leave the popup grey for ever, or make Save do nothing; only the write has a 4 s give-up, and its late success flips 'Couldn't save' to 'Saved' on its own (popup.js:13-23,91-98,184-186).",
+   "status": "partly",
+   "reason": "The initial read gives up after 4 s with a message; Save's read has no limit and a late write still flips 'Couldn't save' to 'Saved'.",
+   "source": "popup.js:11-12,91-98,186"
+  }
+ ],
+ "top": [
+  "Videos that are not in a post (own upload preview, direct messages), or for which X's data never arrives, are covered as 'not verified' with no remedy; Play can end in 'Can't open this one in a new tab' (content.js:191,208,243).",
+  "Installing with X already open changes nothing on the page; the reload help exists only inside the popup for the tab in front, and not when the popup is its own page (popup.js:27-35).",
+  "When X gave no file, Play opens the full X post page instead of the player, and the video is covered again after 15 minutes even mid-watch (background.js:21-23; content.js:119).",
+  "A saved entry that the current rules reject (older pasted link, or 'i'/'home' from the previous build) shows 'Not saved yet' on opening and makes every Save fail until that line is deleted (popup.js:39,59,71-75,190-193).",
+  "Leaving the popup during the 15 s wait cancels everything, and repeated taps at the end land on 'Keep blocking' (popup.js:142-143,159,169-172).",
+  "Follow or unfollow done in the X app or another tab is not reflected until reload (inject.js:98-104)."
+ ],
+ "broken_by_these_edits": [
+  "Player: a quality switch that stalls before the new file's metadata shows no 'Still loading' notice, because the element is paused during the switch (player.js:73,91-95).",
+  "Popup: a real account whose handle equals a listed X path (@home, @share, @search, @i, ...) can no longer be added; names saved by the previous build that are now on the list make every Save fail until deleted (popup.js:44-45,59,190-193).",
+  "Popup: several names on one line separated by spaces are now rejected as one invalid entry (popup.js:53)."
+ ]
+}

@@ -12,3 +12,10 @@
   background: #1d9bf0; color: #fff; font: inherit; font-size: 15px; cursor: pointer;
 }
 .xvg-btn:active { transform: scale(.97); }
+.xvg-nudge { animation: xvg-nudge .35s; }
+@keyframes xvg-nudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.12); } }
+.xvg-overlay { overflow: hidden; }
+.xvg-small { padding: 4px; gap: 0; }
+.xvg-small .xvg-msg { display: none; }
+.xvg-small[data-xvg-note] .xvg-msg { display: block; font-size: 11px; line-height: 1.2; }
+.xvg-small .xvg-btn { padding: 6px 12px; font-size: 13px; }

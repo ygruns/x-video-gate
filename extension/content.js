@@ -11,6 +11,7 @@
   const DEFAULTS = { enabled: true, allowlist: [] };
 
   chrome.storage.local.get(["settings", "allowOnce"], (r) => {
+    r = (!chrome.runtime.lastError && r) || {};
     settings = Object.assign({}, DEFAULTS, r.settings || {});
     if (r.allowOnce && r.allowOnce.until > Date.now()) allowOnce = r.allowOnce;
     schedule();
@@ -22,7 +23,27 @@
     schedule();
   });
 
+  // The popup asks whether the blocker is alive in this tab.
+  chrome.runtime.onMessage.addListener((msg, sender, respond) => {
+    if (msg && msg.type === "xvg:ping") respond({ ok: true });
+  });
+
   // ---- data from inject.js ----
+  // Follow / unfollow pressed on this page: apply it to what is already loaded.
+  document.addEventListener("xvg:follow", (e) => {
+    let d;
+    try { d = JSON.parse(e.detail); } catch { return; }
+    const name = String(d.screenName || "").toLowerCase();
+    if (!name) return;
+    const set = (rec) => {
+      if ((rec.screenName || "").toLowerCase() === name) { rec.following = !!d.following; rec.followKnown = true; }
+    };
+    byThumb.forEach(set);
+    byMedia.forEach(set);
+    byTweet.forEach((arr) => arr.forEach(set));
+    schedule();
+  });
+
   document.addEventListener("xvg:media", (e) => {
     let list;
     try { list = JSON.parse(e.detail); } catch { return; }
@@ -138,6 +159,16 @@
       const stop = (e) => { e.stopPropagation(); if (e.type === "click") e.preventDefault(); };
       ["click", "pointerdown", "pointerup", "touchstart", "touchend", "mousedown", "mouseup"]
         .forEach((t) => ov.addEventListener(t, stop));
+      // A tap on the cover itself goes nowhere on purpose; point at the button
+      // so it doesn't feel dead.
+      ov.addEventListener("click", (e) => {
+        if (e.target.closest(".xvg-btn")) return;
+        const b = ov.querySelector(".xvg-btn");
+        b.classList.remove("xvg-nudge");
+        void b.offsetWidth;
+        b.classList.add("xvg-nudge");
+      });
+
       let lastOpen = 0;
       ov.querySelector(".xvg-btn").addEventListener("click", (e) => {
         stop(e);
@@ -151,17 +182,24 @@
           setText(ov.querySelector(".xvg-msg"), text);
         };
         const result = current ? openSingle(current, () => note("Couldn't open the tab. Tap again.")) : "nothing";
-        if (result === "sent") lastOpen = Date.now();
-        else if (result === "stale") note("The extension was updated. Reload this page.");
+        if (result === "sent") {
+          lastOpen = Date.now();
+          // An earlier failure note no longer applies.
+          delete ov.dataset.xvgNote;
+          schedule();
+        } else if (result === "stale") note("The extension was updated. Reload this page.");
         else note("Can't open this one in a new tab");
       });
       box.appendChild(ov);
     }
+    // Too small for two lines of text and a button: keep just the button
+    // (and a failure note, when there is one).
+    ov.classList.toggle("xvg-small", box.clientHeight > 0 && box.clientHeight < 130);
     if (ov.dataset.xvgNote) {
       // Keep the "can't open" notice only while there is still nothing to open.
       // Notes about a failed attempt stay; "nothing to open" lifts once there is something.
       const nothing = ov.querySelector(".xvg-msg").dataset.xvgText === "Can't open this one in a new tab";
-      const openable = (rec && (rec.variants.length || rec.tweetId)) || tweetIdFromArticle(video.closest("article"));
+      const openable = (rec && ((rec.variants || []).length || rec.tweetId)) || tweetIdFromArticle(video.closest("article"));
       if (!nothing || !openable) return;
       delete ov.dataset.xvgNote;
     }
@@ -214,7 +252,7 @@
           poster: video.getAttribute("poster") || "",
           kind: rec && rec.kind,
         },
-      }, () => { if (chrome.runtime.lastError) onFail(); });
+      }, (res) => { if (chrome.runtime.lastError || !res || !res.ok) onFail(); });
     } catch {
       return "stale";
     }

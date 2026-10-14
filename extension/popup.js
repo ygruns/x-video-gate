@@ -6,24 +6,78 @@ let current = Object.assign({}, DEFAULTS);
 let timer = null;
 let shownAt = -1e9;
 
+// The form stays visibly inactive until the saved settings are in it, so
+// nothing typed early gets overwritten.
+const loadGiveUp = setTimeout(
+  () => say("Couldn't read your settings. Close this and open it again.", true, true), 4000);
 chrome.storage.local.get("settings", (r) => {
+  clearTimeout(loadGiveUp);
+  $("saved").style.visibility = "hidden";
+  if (chrome.runtime.lastError || !r) {
+    say("Couldn't read your settings. Close this and open it again.", true, true);
+    return;
+  }
   current = Object.assign({}, DEFAULTS, r.settings || {});
   fill(current);
-  $("save").disabled = false;
+  for (const id of ["enabled", "allowlist", "save"]) $(id).disabled = false;
+});
+
+// A tab that was open before the extension was installed or updated has no
+// blocker running in it. Say so, and offer the reload.
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  const tab = !chrome.runtime.lastError && tabs && tabs[0];
+  if (!tab || !/^https:\/\/(mobile\.)?(x|twitter)\.com\//.test(tab.url || "")) return;
+  chrome.tabs.sendMessage(tab.id, { type: "xvg:ping" }, (res) => {
+    if (!chrome.runtime.lastError && res && res.ok) return;
+    $("stale").hidden = false;
+    $("reload").onclick = () => chrome.tabs.reload(tab.id, () => { $("stale").hidden = true; });
+  });
 });
 
 function fill(s) {
   $("enabled").checked = s.enabled;
   $("allowlist").value = s.allowlist.map((h) => "@" + h).join("\n");
+  mark();
+}
+
+// X paths that look like a profile link but are not an account.
+const NOT_ACCOUNTS = ["i", "home", "explore", "search", "notifications", "messages",
+  "settings", "compose", "hashtag", "intent", "share", "login", "signup"];
+
+// One entry per line (or comma): "@name", "name" or a profile link. Anything
+// that cannot be a handle is returned in `bad` instead of being saved as if
+// it were one. A display name like "John Smith" is one bad entry, not two
+// accounts.
+function parseHandles(text) {
+  const good = [], bad = [];
+  for (const raw of text.split(/[\n,]+/).map((x) => x.trim()).filter(Boolean)) {
+    const link = /^(https?:\/\/)?(www\.|mobile\.)?(x|twitter)\.com\//i;
+    const h = raw
+      .replace(link, "")
+      .replace(/[/?#].*$/, "")
+      .replace(/^@/, "")
+      .toLowerCase();
+    // "@home" typed as a name is an account; "x.com/home" pasted as a link is a page.
+    if (!/^[a-z0-9_]{1,15}$/.test(h) || (link.test(raw) && NOT_ACCOUNTS.includes(h))) bad.push(raw);
+    else if (!good.includes(h)) good.push(h);
+  }
+  return { good, bad };
 }
 
 function readForm() {
-  const allowlist = $("allowlist").value
-    .split(/[\s,]+/)
-    .map((h) => h.trim().replace(/^@/, "").toLowerCase())
-    .filter(Boolean);
-  return { enabled: $("enabled").checked, allowlist };
+  const { good, bad } = parseHandles($("allowlist").value);
+  return { enabled: $("enabled").checked, allowlist: good, bad };
 }
+
+// Shows "Not saved yet" while the form differs from what is stored.
+function mark() {
+  const f = readForm();
+  const same = f.enabled === current.enabled && !f.bad.length &&
+    f.allowlist.join(",") === current.allowlist.join(",");
+  $("dirty").style.visibility = same ? "hidden" : "visible";
+}
+$("enabled").addEventListener("change", mark);
+$("allowlist").addEventListener("input", mark);
 
 // Anything that lets more video through than the saved settings do.
 function loosenings(next) {
@@ -35,21 +89,25 @@ function loosenings(next) {
 }
 
 function commit(next) {
+  // A write that never answers is a failure too.
+  const giveUp = setTimeout(() => say("Couldn't save. Try again.", true), 4000);
   chrome.storage.local.set({ settings: next }, () => {
-    const failed = !!chrome.runtime.lastError;
-    if (!failed) current = next;
-    say(failed ? "Couldn't save. Try again." : "Saved", failed);
+    clearTimeout(giveUp);
+    if (chrome.runtime.lastError) { say("Couldn't save. Try again.", true); return; }
+    current = next;
+    fill(current);
+    say("Saved");
   });
 }
 
 let sayTimer = null;
-function say(text, bad) {
+function say(text, bad, sticky) {
   const el = $("saved");
   el.textContent = text;
   el.classList.toggle("bad", !!bad);
   el.style.visibility = "visible";
   clearTimeout(sayTimer);
-  sayTimer = setTimeout(() => (el.style.visibility = "hidden"), bad ? 6000 : 2000);
+  if (!sticky) sayTimer = setTimeout(() => (el.style.visibility = "hidden"), bad ? 6000 : 2000);
 }
 
 function show(view) {
@@ -73,11 +131,14 @@ function fresh() {
   return performance.now() - shownAt < 600;
 }
 
+// Back to the form. The blocking switch returns to what is really stored;
+// typed handles are kept, since saving them needs the full gate again anyway.
 function cancel() {
   clearInterval(timer);
   timer = null;
-  fill(current);
+  $("enabled").checked = current.enabled;
   show("form");
+  mark();
 }
 
 // Two confirmations with a forced wait in between. Closing the popup
@@ -97,7 +158,7 @@ function gate(next, what) {
     if (fresh()) return;
     // performance.now() is monotonic: changing the device clock doesn't help.
     const end = performance.now() + WAIT_SECONDS * 1000;
-    title.textContent = "Wait";
+    title.textContent = "Wait. Keep this open.";
     yes.disabled = true;
     const tick = () => {
       const left = Math.ceil((end - performance.now()) / 1000);
@@ -111,7 +172,7 @@ function gate(next, what) {
       // wait lands on "Keep blocking", not on the final yes.
       $("gate").classList.add("last");
       settle();
-      yes.onclick = () => { if (fresh()) return; commit(next); show("form"); };
+      yes.onclick = () => { if (fresh()) return; show("form"); commit(next); };
     };
     tick();
     timer = setInterval(tick, 250);
@@ -122,10 +183,17 @@ $("gate-no").onclick = () => { if (!fresh()) cancel(); };
 
 $("save").onclick = () => {
   if (fresh()) return;
+  $("saved").style.visibility = "hidden"; // an old message no longer applies
   // Judge against what is actually stored, not this popup's copy of it.
   chrome.storage.local.get("settings", (r) => {
+    if (chrome.runtime.lastError || !r) { say("Couldn't read your settings. Try again.", true); return; }
     current = Object.assign({}, DEFAULTS, r.settings || {});
-    const next = readForm();
+    const form = readForm();
+    if (form.bad.length) {
+      say("Not an account name: " + form.bad.join(", "), true);
+      return;
+    }
+    const next = { enabled: form.enabled, allowlist: form.allowlist };
     const what = loosenings(next);
     if (what.length) gate(next, what);
     else commit(next);

@@ -12,14 +12,18 @@
     });
   };
 
+  let failed = false;
   function fail(text) {
+    failed = true;
+    document.getElementById("slow").hidden = true;
     document.getElementById("main").innerHTML = '<div class="err"></div>';
     document.querySelector(".err").textContent = text;
     sel.hidden = true;
   }
 
   chrome.storage.local.get(key, (r) => {
-    const p = r[key];
+    const p = !chrome.runtime.lastError && r && r[key];
+    if (p && p.variants) p.variants = p.variants.filter((x) => x && x.url);
     if (!p || !p.variants || !p.variants.length) {
       fail("This video link has expired. Close this tab and tap Play on the post again.");
       return;
@@ -30,7 +34,7 @@
     }
     if (p.text) {
       const t = document.getElementById("text");
-      t.textContent = p.text;
+      t.textContent = p.text.length >= 280 ? p.text + "…" : p.text;
       t.hidden = false;
     }
     if (p.poster) v.poster = p.poster;
@@ -59,6 +63,22 @@
       v.play().catch(() => {});
     });
 
+    // A connection that stalls gives no error, only an endless spinner.
+    const slow = document.getElementById("slow");
+    let stall = null;
+    if (p.variants.length < 2) slow.textContent = "Still loading. Check your connection.";
+    // Only while it is actually trying to play: a paused or failed video is not
+    // "slow". A quality switch counts as trying, though the element reads paused.
+    let switching = false;
+    const waiting = () => {
+      clearTimeout(stall);
+      stall = setTimeout(() => { if (!failed && (!v.paused || switching)) slow.hidden = false; }, 10000);
+    };
+    const moving = () => { clearTimeout(stall); slow.hidden = true; };
+    v.addEventListener("waiting", waiting);
+    v.addEventListener("loadstart", waiting);
+    ["playing", "canplay", "pause", "ended"].forEach((t) => v.addEventListener(t, moving));
+
     // Position and play state to carry across a quality switch. Kept outside
     // the handler so a second switch before the first has loaded still
     // resumes from the right place.
@@ -67,11 +87,13 @@
       if (!resume) return;
       const r = resume;
       resume = null;
+      switching = false;
       v.currentTime = r.t;
       if (r.playing) v.play().catch(() => {});
     });
     sel.onchange = () => {
       if (!resume) resume = { t: v.currentTime, playing: !v.paused && !v.ended };
+      switching = resume.playing;
       v.autoplay = false;
       v.src = sel.value;
     };
