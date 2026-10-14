@@ -15,3 +15,9 @@ logged-in feed has to be checked by hand.
 - `fsm_popup3.mjs`, `fsm_popup4.mjs`, `popup5.mjs` — the settings popup and its gate
 - `fsm_video3.mjs`, `dtap.mjs` — round trips, double tap, player quality switching
 - `player_fail.mjs` — dead files, expired link, Close
+- `touchevents.mjs` — a vertical drag starting on a cover never reaches the page's listeners; a sideways one does
+
+Real finger scrolling cannot be checked here: Chrome ignores synthetic touch
+scroll gestures in this setup, headless or not (`scrollharness.mjs` shows it on
+a plain page). Swipe behaviour is checked at the event level and needs a phone
+for the rest. `XVG_HEADFUL=1` runs any script in a real window parked off-screen.

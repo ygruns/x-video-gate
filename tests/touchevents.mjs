@@ -8,19 +8,21 @@ const out = await page.evaluate(() => {
   const seen = [];
   const root = document.body;
   for (const t of ['touchstart', 'touchmove', 'pointermove']) {
-    root.addEventListener(t, (e) => { seen.push(t + '(page capture)'); e.preventDefault(); }, { capture: true, passive: false });
-    root.addEventListener(t, (e) => { seen.push(t + '(page bubble)'); e.preventDefault(); }, { passive: false });
+    root.addEventListener(t, (e) => { seen.push(t + '(page capture)'); if (!/start/.test(t)) e.preventDefault(); }, { capture: true, passive: false });
+    root.addEventListener(t, (e) => { seen.push(t + '(page bubble)'); if (!/start/.test(t)) e.preventDefault(); }, { passive: false });
   }
   const ov = document.querySelector('.xvg-overlay');
   const r = ov.getBoundingClientRect(); const x = r.x + 20, y = r.y + r.height - 15;
-  const touch = (yy) => new Touch({ identifier: 1, target: ov, clientX: x, clientY: yy });
+  const touch = (xx, yy) => new Touch({ identifier: 1, target: ov, clientX: xx, clientY: yy });
   const res = {};
-  for (const [t, ev] of [['touchstart', new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [touch(y)], targetTouches: [touch(y)], changedTouches: [touch(y)] })],
-                         ['touchmove', new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [touch(y - 40)], targetTouches: [touch(y - 40)], changedTouches: [touch(y - 40)] })],
-                         ['pointermove', new PointerEvent('pointermove', { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y - 40 })]]) {
-    ov.dispatchEvent(ev); res[t] = ev.defaultPrevented ? 'SCROLL CANCELLED' : 'scroll allowed';
-  }
-  return { res, pageListenersThatRan: seen };
+  const fire = (ev) => { ov.dispatchEvent(ev); return ev.defaultPrevented ? 'SCROLL CANCELLED' : 'allowed'; };
+  const T = (type, xx, yy) => new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [touch(xx, yy)], targetTouches: type === 'touchend' ? [] : [touch(xx, yy)], changedTouches: [touch(xx, yy)] });
+  const run = (label, dx, dy) => { const before = seen.length; fire(T('touchstart', x, y)); const m = fire(T('touchmove', x + dx, y + dy));
+    const pm = fire(new PointerEvent('pointermove', { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x + dx, clientY: y + dy })); fire(T('touchend', x + dx, y + dy));
+    res[label] = { move: m, pointermove: pm, pageSaw: seen.slice(before).filter(s => /move/.test(s)) }; };
+  run('vertical drag', 3, -40);
+  run('sideways drag', -40, 3);
+  return res;
 });
 console.log(JSON.stringify(out));
 await browser.close(); process.exit(0);

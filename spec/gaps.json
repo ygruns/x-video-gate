@@ -1,5 +1,5 @@
 {
- "extension_version": "1.4.0",
+ "extension_version": "1.4.1",
  "control_census": [
   {
    "component": "popup",
@@ -331,7 +331,7 @@
    "state": "covered, normal size",
    "what_the_user_sees_happen": "The Play button gives a short pulse; nothing else",
    "class": "acts",
-   "source": "content.js:159-170; content.css:15-16",
+   "source": "content.js:159-170; content.css:16-17",
    "why_it_matters": "A 12% pulse for a third of a second with no words; it does not say why the post did not open. No reduced-motion handling."
   },
   {
@@ -340,17 +340,17 @@
    "state": "covered, small tile",
    "what_the_user_sees_happen": "Same pulse on the small button",
    "class": "acts",
-   "source": "content.js:164-197; content.css:18-21",
+   "source": "content.js:164-197; content.css:19-22",
    "why_it_matters": ""
   },
   {
    "component": "X page (overlay / video)",
    "control_or_input": "Overlay surface: double tap",
    "state": "covered",
-   "what_the_user_sees_happen": "Two pulses",
+   "what_the_user_sees_happen": "Two pulses of the Play button; the page does not zoom",
    "class": "acts",
-   "source": "content.js:164-170",
-   "why_it_matters": ""
+   "source": "content.js:164-170; content.css:8",
+   "why_it_matters": "touch-action: manipulation removes double-tap zoom on covers (pinch still works). The CSS comment says 'as on the rest of the page', which is not true for double tap."
   },
   {
    "component": "X page (overlay / video)",
@@ -372,12 +372,12 @@
   },
   {
    "component": "X page (overlay / video)",
-   "control_or_input": "Overlay surface: swipe / scroll",
+   "control_or_input": "Overlay surface: vertical swipe / scroll",
    "state": "covered",
-   "what_the_user_sees_happen": "Page scrolls",
+   "what_the_user_sees_happen": "Page scrolls. X's capture-phase listeners see the press (touchstart/pointerdown) and the lift, but none of the moves in between; its bubble-phase listeners see none of it (stopped at the cover)",
    "class": "acts",
-   "source": "content.js:157-161",
-   "why_it_matters": ""
+   "source": "content.js:160-161,292-319; content.css:8",
+   "why_it_matters": "Two open points. (a) The effective touch-action still intersects with X's ancestors, so a restriction on the video box cannot be widened. (b) X now gets a press and a lift with no movement between them: any X code that tells a tap from a drag by watching moves could read a scroll as a tap. Chrome sends pointercancel when it starts scrolling, which is not filtered; other browsers may not. Not determinable statically."
   },
   {
    "component": "X page (overlay / video)",
@@ -448,7 +448,7 @@
    "state": "small tile, any of the three failures above",
    "what_the_user_sees_happen": "The notice appears in small type above the button",
    "class": "acts",
-   "source": "content.js:179-191,197; content.css:19-20",
+   "source": "content.js:179-191,197; content.css:20-21",
    "why_it_matters": "In a very short tile the note plus button can still be clipped (overflow hidden). The author / reason line stays hidden in small tiles by design."
   },
   {
@@ -466,7 +466,7 @@
    "state": "covered",
    "what_the_user_sees_happen": "Nothing visible",
    "class": "silently_ignored",
-   "source": "content.js:293-304",
+   "source": "content.js:322-333",
    "why_it_matters": ""
   },
   {
@@ -484,7 +484,7 @@
    "state": "never covered",
    "what_the_user_sees_happen": "Plays as on plain X",
    "class": "acts",
-   "source": "content.js:293-300",
+   "source": "content.js:322-329",
    "why_it_matters": ""
   },
   {
@@ -520,7 +520,7 @@
    "state": "any",
    "what_the_user_sees_happen": "Re-evaluated within half a second",
    "class": "acts",
-   "source": "content.js:317-320",
+   "source": "content.js:346-349",
    "why_it_matters": ""
   },
   {
@@ -700,7 +700,7 @@
    "state": "X tab with covers",
    "what_the_user_sees_happen": "Covers stay and plays stay cancelled until reload; button says 'The extension was updated. Reload this page.'",
    "class": "acts",
-   "source": "content.js:190,302-304",
+   "source": "content.js:190,331-333",
    "why_it_matters": ""
   },
   {
@@ -729,6 +729,60 @@
    "class": "fails_silently",
    "source": "player.js:73,84-95",
    "why_it_matters": "Changing the source pauses the element until metadata arrives, and the notice is now suppressed whenever the element is paused. Introduced by the 'not while paused' edit."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Sideways swipe starting on a cover (multi-media carousel, media viewer)",
+   "state": "covered",
+   "what_the_user_sees_happen": "Reaches X as on an uncovered item: carousel / viewer can move",
+   "class": "acts",
+   "source": "content.js:304-313",
+   "why_it_matters": "Direction is decided once, from the first move; a swipe whose first move is at least as vertical as it is horizontal (including exactly diagonal or zero movement) is treated as vertical for its whole length and hidden from X."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Tap a cover while an X menu, popover or hover card is open",
+   "state": "covered",
+   "what_the_user_sees_happen": "Press and lift reach X's capture-phase listeners again (as before 1.4.1); bubble-phase listeners still don't get them because the cover stops them (content.js:160-161). A layer that closes on a capture-phase outside press closes; one that listens in the bubble phase does not",
+   "class": "undefined",
+   "source": "content.js:159-161,292-319",
+   "why_it_matters": "Page-dependent."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Mouse (desktop): press, move or release over a cover",
+   "state": "covered",
+   "what_the_user_sees_happen": "Unaffected by the drag filter (touch only); as before 1.4.1",
+   "class": "acts",
+   "source": "content.js:316",
+   "why_it_matters": ""
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Vertical swipe starting on a cover in X's vertical video feed, or swipe-down-to-close in the media viewer",
+   "state": "covered",
+   "what_the_user_sees_happen": "If X moves between items / closes the viewer with its own code: nothing happens and the user may be stuck on the covered item (the cover fills it). If X uses native scrolling: works",
+   "class": "undefined",
+   "source": "content.js:292-319",
+   "why_it_matters": "These gestures are vertical drags, exactly the ones now hidden from X. Needs a device test."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Swipe starting on a cover in a browser that reports tiny first moves (no touch slop, e.g. Safari / Firefox)",
+   "state": "covered",
+   "what_the_user_sees_happen": "The direction is taken from the first 1-2 px of movement: a sideways swipe can be classified as vertical and hidden from X",
+   "class": "undefined",
+   "source": "content.js:309-311",
+   "why_it_matters": "The code comment relies on Chrome's touch slop; other browsers are not considered."
+  },
+  {
+   "component": "X page (overlay / video)",
+   "control_or_input": "Two-finger pinch that starts on a cover",
+   "state": "covered",
+   "what_the_user_sees_happen": "The second finger ends the tracking (touches.length > 1): moves of both fingers reach X from then on; pinch zoom itself is the browser's",
+   "class": "acts",
+   "source": "content.js:299-302",
+   "why_it_matters": ""
   }
  ],
  "failure_census": [
@@ -1050,13 +1104,13 @@
    "component": "X page (overlay / video)",
    "state_nobody_designed": "small tile",
    "what_happens_now": "Button only; failure notes shown in small type; author and reason never shown",
-   "source": "content.css:18-21; content.js:197"
+   "source": "content.css:19-22; content.js:197"
   },
   {
    "component": "X page (overlay / video)",
    "state_nobody_designed": "tile that changes size (rotate, resize, lazy layout), narrow tile",
    "what_happens_now": "Mode follows the height at the next page check; width ignored; overflow clipped",
-   "source": "content.js:197; content.css:17"
+   "source": "content.js:197; content.css:18"
   },
   {
    "component": "X page (overlay / video)",
@@ -1117,6 +1171,18 @@
    "state_nobody_designed": "post with several videos",
    "what_happens_now": "Only the tapped one",
    "source": "content.js:239-254"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "a cover inside an X vertical gesture surface (vertical video feed, swipe-down-to-close viewer, script-driven pull-to-refresh)",
+   "what_happens_now": "X sees the press and the lift but not the vertical moves of a drag that starts on the cover; sideways gestures reach X",
+   "source": "content.js:292-319"
+  },
+  {
+   "component": "X page (overlay / video)",
+   "state_nobody_designed": "cover removed or replaced while a finger is still on it",
+   "what_happens_now": "Further touch events target the detached node and no longer reach window, so the tracking is not cleared at lift; it is overwritten by the next touchstart, so nothing leaks into the next gesture",
+   "source": "content.js:298-302,317-319"
   }
  ],
  "human_expectations": [
@@ -1182,7 +1248,7 @@
    "what_they_would_expect_or_try": "Some message",
    "what_actually_happens": "A small-type note appears above the button",
    "verdict": "met",
-   "source": "content.css:20; content.js:179-191"
+   "source": "content.css:21; content.js:179-191"
   },
   {
    "who": "a first-time user on a phone who has not read any docs",
@@ -1398,7 +1464,7 @@
    "what_they_would_expect_or_try": "Covers disappear",
    "what_actually_happens": "They stay until reload",
    "verdict": "unmet",
-   "source": "content.js:302-304"
+   "source": "content.js:331-333"
   },
   {
    "who": "a first-time user on a phone who has not read any docs",
@@ -1439,6 +1505,38 @@
    "what_actually_happens": "Spinner only",
    "verdict": "unmet",
    "source": "player.js:73,91-95"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Scrolls the feed with a finger that lands on a covered video",
+   "what_they_would_expect_or_try": "The page scrolls",
+   "what_actually_happens": "It scrolls, unless an X style on the video box restricts panning (cannot be checked statically)",
+   "verdict": "met",
+   "source": "content.js:292-319; content.css:8"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Swipes sideways through a multi-media post or the media viewer and lands on a covered item",
+   "what_they_would_expect_or_try": "Swipe on to the next item",
+   "what_actually_happens": "The swipe reaches X and moves on (Chrome; other browsers may misread a sloppy first move as vertical)",
+   "verdict": "met",
+   "source": "content.js:304-313"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Double-taps a cover to zoom in on its text",
+   "what_they_would_expect_or_try": "Page zooms",
+   "what_actually_happens": "No zoom; the button pulses twice",
+   "verdict": "surprising",
+   "source": "content.css:8; content.js:164-170"
+  },
+  {
+   "who": "a first-time user on a phone who has not read any docs",
+   "situation": "Swipes up through X's vertical video feed, or down to close the media viewer, from a covered video",
+   "what_they_would_expect_or_try": "Next video / viewer closes",
+   "what_actually_happens": "Vertical moves from a cover are hidden from X; if X drives these with its own code, nothing happens and the covered item fills the screen",
+   "verdict": "unmet",
+   "source": "content.js:292-319"
   }
  ],
  "previous_top": [
@@ -1455,10 +1553,10 @@
    "source": "popup.js:44-63"
   },
   {
-   "item": "In small tiles the cover hides its text line, so every failure notice ('Can't open', 'Couldn't open the tab', 'extension was updated') and the reason for the cover are invisible; the mode is fixed when the cover is created (content.js:197,179-191; content.css:19).",
+   "item": "In small tiles the cover hides its text line, so every failure notice ('Can't open', 'Couldn't open the tab', 'extension was updated') and the reason for the cover are invisible; the mode is fixed when the cover is created (content.js:197,179-191; content.css:20).",
    "status": "partly",
    "reason": "Failure notes now show in small tiles and the mode is re-decided on every check; it does not react to a resize without a DOM change, and width is ignored.",
-   "source": "content.js:197; content.css:20"
+   "source": "content.js:197; content.css:21"
   },
   {
    "item": "Player shows 'Still loading. Check your connection, or pick a lower quality above.' when it should not: 10 s after the 'couldn't be loaded' error, while merely waiting for the user to press play, and when there is no quality menu (player.js:60,66-78; player.html:29).",
@@ -1509,11 +1607,19 @@
   "When X gave no file, Play opens the full X post page instead of the player, and the video is covered again after 15 minutes even mid-watch (background.js:21-23; content.js:119).",
   "A saved entry that the current rules reject (older pasted link, or 'i'/'home' from the previous build) shows 'Not saved yet' on opening and makes every Save fail until that line is deleted (popup.js:39,59,71-75,190-193).",
   "Leaving the popup during the 15 s wait cancels everything, and repeated taps at the end land on 'Keep blocking' (popup.js:142-143,159,169-172).",
-  "Follow or unfollow done in the X app or another tab is not reflected until reload (inject.js:98-104)."
+  "Follow or unfollow done in the X app or another tab is not reflected until reload (inject.js:98-104).",
+  "If X drives its vertical video feed or swipe-down-to-close with its own code, a vertical swipe that starts on a cover no longer reaches X and the user can get stuck on a covered item (content.js:292-319). Needs a device test."
  ],
  "broken_by_these_edits": [
   "Player: a quality switch that stalls before the new file's metadata shows no 'Still loading' notice, because the element is paused during the switch (player.js:73,91-95).",
   "Popup: a real account whose handle equals a listed X path (@home, @share, @search, @i, ...) can no longer be added; names saved by the previous build that are now on the list make every Save fail until deleted (popup.js:44-45,59,190-193).",
   "Popup: several names on one line separated by spaces are now rejected as one invalid entry (popup.js:53)."
+ ],
+ "change_1_4_1_notes": [
+  "Since the narrowed fix only vertical touch moves of a drag that started on a cover are hidden (content.js:292-319). Gone from the earlier costs: sideways swipes, presses/lifts, mouse input and the per-event closest() on every move (moves now return at once unless a drag is tracked). Remaining: vertical swipes in X's own gesture surfaces, double-tap zoom removed by touch-action: manipulation (content.css:8), and ancestor touch-action limits.",
+  "The overlay's own stop listeners for pointerdown/pointerup/touchstart/touchend (content.js:160-161) run again, so presses/lifts still reach only X's capture-phase listeners - same as before 1.4.1.",
+  "Tracking: started only for a single touch landing on a cover (content.js:299-302); any extra finger clears it; cleared on touchend/touchcancel when no finger is left (content.js:317-319); overwritten by every touchstart, so it cannot leak into the next gesture. In Chrome the touch pointermove precedes touchmove; both feed the same decision (content.js:304-316).",
+  "Direction: decided once from the first move with `>=`, so zero or exactly diagonal movement counts as vertical (content.js:311). The comment's reliance on Chrome's touch slop does not hold for browsers that report small first moves.",
+  "X sees press and lift without moves in a vertical drag from a cover; whether any X code then treats it as a tap is not determinable (Chrome's pointercancel is not filtered)."
  ]
 }

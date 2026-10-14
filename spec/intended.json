@@ -256,9 +256,15 @@
         ],
         [
           "BLOCKED_*",
-          "finger lands on the cover and swipes",
+          "finger lands on the cover and drags vertically",
           "same",
-          "the page scrolls exactly as it does anywhere else; X never sees the touch"
+          "the page scrolls exactly as it does anywhere else; X never sees the movement"
+        ],
+        [
+          "BLOCKED_*",
+          "finger lands on the cover and drags sideways",
+          "same",
+          "X gets the movement as usual (photo carousels, media viewer)"
         ]
       ],
       "invariants": [
@@ -352,7 +358,8 @@
     "Leaving the popup during the wait cancels it (the title says to keep it open); taps at the end of the wait land on 'Keep blocking' by design",
     "Follow changes made in another tab or app are picked up only when X sends fresh data or the page reloads",
     "Account names on one line separated by spaces are refused; one per line or comma-separated",
-    "Real finger scrolling cannot be driven in the test browser (Chrome ignores synthetic touch gestures there); it is verified at the event level only: no touch from a cover reaches X's listeners and nothing cancels it"
+    "Real finger scrolling cannot be driven in the test browser (Chrome ignores synthetic touch gestures there); it is verified at the event level only: no touch from a cover reaches X's listeners and nothing cancels it",
+    "In X's full-screen vertical video viewer, an upward swipe that starts on a covered video does not advance to the next one; the viewer's close/back still works"
   ],
   "rule": "Every user action in every state has an outcome the user can SEE. 'Nothing happens' alone is never acceptable: the control looks inactive, or it says why, or it is a bug."
 }

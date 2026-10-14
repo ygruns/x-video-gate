@@ -1,5 +1,5 @@
 {
- "extension_version": "1.4.0",
+ "extension_version": "1.4.1",
  "components": [
   {
    "name": "Settings popup (popup.html + popup.js)",
@@ -1263,7 +1263,7 @@
       "page-controlled",
       "true after block"
      ],
-     "source": "content.js:142,298"
+     "source": "content.js:142,327"
     },
     {
      "name": "video.muted",
@@ -1371,7 +1371,7 @@
       "absent",
       "present"
      ],
-     "source": "content.js:197; content.css:18-21"
+     "source": "content.js:197; content.css:19-22"
     },
     {
      "name": ".xvg-btn class 'xvg-nudge' (added on a tap of the cover background; never removed, re-triggered by remove/reflow/add)",
@@ -1380,7 +1380,7 @@
       "absent",
       "present"
      ],
-     "source": "content.js:164-170; content.css:15-16"
+     "source": "content.js:164-170; content.css:16-17"
     }
    ],
    "states": [
@@ -1685,7 +1685,7 @@
       "overlay built (stop listeners, button, lastOpen=0) and appended",
       "message set"
      ],
-     "source": "content.js:293-304"
+     "source": "content.js:322-333"
     },
     {
      "from": "V2",
@@ -1700,7 +1700,7 @@
       "overlay built (stop listeners, button, lastOpen=0) and appended",
       "message set"
      ],
-     "source": "content.js:293-304"
+     "source": "content.js:322-333"
     },
     {
      "from": "V3",
@@ -1715,7 +1715,7 @@
       "overlay built (stop listeners, button, lastOpen=0) and appended",
       "message set"
      ],
-     "source": "content.js:293-304"
+     "source": "content.js:322-333"
     },
     {
      "from": "V1",
@@ -1726,7 +1726,7 @@
       "v.pause(); block() as V1/Ev1",
       "xvg-small class re-evaluated from the box height"
      ],
-     "source": "content.js:293-304"
+     "source": "content.js:322-333"
     },
     {
      "from": "V1n",
@@ -1761,7 +1761,7 @@
      "side_effects": [
       "v.pause(); as V4/Ev1"
      ],
-     "source": "content.js:293-304"
+     "source": "content.js:322-333"
     },
     {
      "from": "V5",
@@ -1769,7 +1769,7 @@
      "to": "V5",
      "guard": "event never reaches document",
      "side_effects": [],
-     "source": "content.js:302-304"
+     "source": "content.js:331-333"
     },
     {
      "from": "V0",
@@ -1779,7 +1779,7 @@
      "side_effects": [
       "nothing; dataset stays unset until a scan"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V1",
@@ -1789,7 +1789,7 @@
      "side_effects": [
       "nothing: guard does not unblock; plays hidden+muted until next scan"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V1n",
@@ -1799,7 +1799,7 @@
      "side_effects": [
       "as V1"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V2",
@@ -1809,7 +1809,7 @@
      "side_effects": [
       "nothing"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V3",
@@ -1819,7 +1819,7 @@
      "side_effects": [
       "nothing by the extension"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V4",
@@ -1829,7 +1829,7 @@
      "side_effects": [
       "nothing; hidden under inherited overlay until next scan"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V5",
@@ -1839,7 +1839,7 @@
      "side_effects": [
       "event never reaches document"
      ],
-     "source": "content.js:293-301"
+     "source": "content.js:322-330"
     },
     {
      "from": "V0",
@@ -1895,10 +1895,11 @@
      "to": "V1",
      "guard": "",
      "side_effects": [
-      "stopPropagation (7 types, bubble); preventDefault on click",
-      "second click listener on the overlay: button gets class xvg-nudge (0.35 s pulse); class changes are not observed, so no scan"
+      "press/lift and mouse/click events stopped in bubble phase at the overlay; preventDefault on click",
+      "if the finger drags vertically, its moves are also hidden from all page listeners",
+      "nudge pulse on the button for a tap"
      ],
-     "source": "content.js:159-170"
+     "source": "content.js:159-170,292-319"
     },
     {
      "from": "V1n",
@@ -1906,10 +1907,11 @@
      "to": "V1n",
      "guard": "",
      "side_effects": [
-      "stopPropagation (7 types, bubble); preventDefault on click",
-      "second click listener on the overlay: button gets class xvg-nudge (0.35 s pulse); class changes are not observed, so no scan"
+      "press/lift and mouse/click events stopped in bubble phase at the overlay; preventDefault on click",
+      "if the finger drags vertically, its moves are also hidden from all page listeners",
+      "nudge pulse on the button for a tap"
      ],
-     "source": "content.js:159-170"
+     "source": "content.js:159-170,292-319"
     },
     {
      "from": "V4",
@@ -1917,10 +1919,11 @@
      "to": "V4",
      "guard": "",
      "side_effects": [
-      "stopPropagation (7 types, bubble); preventDefault on click",
-      "second click listener on the overlay: button gets class xvg-nudge (0.35 s pulse); class changes are not observed, so no scan"
+      "press/lift and mouse/click events stopped in bubble phase at the overlay; preventDefault on click",
+      "if the finger drags vertically, its moves are also hidden from all page listeners",
+      "nudge pulse on the button for a tap"
      ],
-     "source": "content.js:159-170"
+     "source": "content.js:159-170,292-319"
     },
     {
      "from": "V5",
@@ -1958,7 +1961,7 @@
      "side_effects": [
       "no extension handler"
      ],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V1",
@@ -1966,7 +1969,7 @@
      "to": "V1",
      "guard": "unreachable by pointer (covered, visibility hidden); page keyboard shortcuts lead to Ev3",
      "side_effects": [],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V1n",
@@ -1974,7 +1977,7 @@
      "to": "V1n",
      "guard": "unreachable by pointer",
      "side_effects": [],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V2",
@@ -1984,7 +1987,7 @@
      "side_effects": [
       "nothing by the extension"
      ],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V3",
@@ -1994,7 +1997,7 @@
      "side_effects": [
       "nothing by the extension; user must press play"
      ],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V4",
@@ -2002,7 +2005,7 @@
      "to": "V4",
      "guard": "unreachable by pointer",
      "side_effects": [],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V5",
@@ -2010,7 +2013,7 @@
      "to": "V5",
      "guard": "unreachable",
      "side_effects": [],
-     "source": "content.css:1-8; content.js:293-304"
+     "source": "content.css:1-9; content.js:322-333"
     },
     {
      "from": "V0",
@@ -2020,7 +2023,7 @@
      "side_effects": [
       "mutation -> schedule"
      ],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V1",
@@ -2048,7 +2051,7 @@
      "to": "V5",
      "guard": "",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V3",
@@ -2056,7 +2059,7 @@
      "to": "V5",
      "guard": "",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V4",
@@ -2082,7 +2085,7 @@
      "to": "V0",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V1",
@@ -2090,7 +2093,7 @@
      "to": "V1",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V1n",
@@ -2098,7 +2101,7 @@
      "to": "V1n",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V2",
@@ -2106,7 +2109,7 @@
      "to": "V2",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V3",
@@ -2114,7 +2117,7 @@
      "to": "V3",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V4",
@@ -2122,7 +2125,7 @@
      "to": "V4",
      "guard": "already attached: n/a",
      "side_effects": [],
-     "source": "content.js:306-310"
+     "source": "content.js:335-339"
     },
     {
      "from": "V5",
@@ -2284,12 +2287,13 @@
     "lastOpen lives in the overlay's closure: a rebuilt overlay starts at 0. It is compared with Date.now() (wall clock).",
     "The button acts on box.querySelector('video'): first video currently in the box of creation time (content.js:178).",
     "Overlay listeners are bubble-phase for click, pointerdown/up, touchstart/end, mousedown/up; preventDefault only on click. Capture-phase page listeners, keydown, dblclick, auxclick, contextmenu, wheel are not intercepted (content.js:157-161).",
-    "The guard does not unblock and cannot see detached elements (content.js:293-304).",
+    "The guard does not unblock and cannot see detached elements (content.js:322-333).",
     "Scans run on the next animation frame or after 250 ms, whichever first; in a hidden tab only the timer fires (subject to browser background-timer throttling).",
     "Notices: 'Can't open this one in a new tab', 'Couldn't open the tab. Tap again.', 'The extension was updated. Reload this page.' (content.js:184-191). A sent tap clears any notice (content.js:185-189); block() additionally lifts the first one when something openable appears (content.js:198-204).",
     "The reply to sendMessage now arrives only after the background has stored the link and created the tab, or failed (background.js:12-15); 'not ok' and a closed channel both lead to the 'Couldn't open the tab' notice (content.js:255).",
     "Follow/unfollow events rewrite `following` on every cached record of that screen name and schedule a scan (content.js:33-45): covered videos of a newly followed author go to V3 (paused), allowed videos of an unfollowed author go to V1.",
-    "Small mode is toggled at each block() call from the box height (content.js:197); class changes are not observed, so no extra scan. In small mode the message is hidden except while data-xvg-note is set, when it is shown at 11px (content.css:19-20). Height 0 counts as not small; width is not considered; overflow is clipped (content.css:17). A resize that causes no DOM mutation does not re-run block()."
+    "Small mode is toggled at each block() call from the box height (content.js:197); class changes are not observed, so no extra scan. In small mode the message is hidden except while data-xvg-note is set, when it is shown at 11px (content.css:20-21). Height 0 counts as not small; width is not considered; overflow is clipped (content.css:18). A resize that causes no DOM mutation does not re-run block().",
+    "1.4.1: only the vertical moves (touchmove and touch pointermove) of a drag that began on a cover are stopped at window capture (content.js:292-319); presses, lifts, sideways drags and mouse input are not. The cover has touch-action: manipulation (content.css:8)."
    ]
   },
   {
@@ -2352,7 +2356,7 @@
      "values": [
       "running"
      ],
-     "source": "content.js:317-320"
+     "source": "content.js:346-349"
     },
     {
      "name": "MutationObserver (childList, subtree, attributes poster/src)",
@@ -2361,7 +2365,7 @@
       "not started",
       "observing"
      ],
-     "source": "content.js:306-314"
+     "source": "content.js:335-343"
     },
     {
      "name": "document listeners: xvg:media; play/playing/loadeddata (capture)",
@@ -2369,7 +2373,7 @@
      "values": [
       "attached"
      ],
-     "source": "content.js:47,302-304"
+     "source": "content.js:47,331-333"
     },
     {
      "name": "runtime.onMessage listener answering {ok:true} to 'xvg:ping'",
@@ -2386,6 +2390,17 @@
       "attached"
      ],
      "source": "content.js:33-45"
+    },
+    {
+     "name": "drag ({x, y, dir} for a single touch that began on a cover; dir null until the first move, then 'v' or 'h'); window capture passive listeners: touchstart sets/clears it, touchmove and touch pointermove stopImmediatePropagation while dir === 'v', touchend/touchcancel clear it when no finger is left",
+     "where": "JS variable",
+     "values": [
+      "null",
+      "{dir:null}",
+      "{dir:'v'}",
+      "{dir:'h'}"
+     ],
+     "source": "content.js:298-319"
     }
    ],
    "states": [
@@ -2575,7 +2590,7 @@
      "side_effects": [
       "no visibilitychange listener"
      ],
-     "source": "content.js:1-321"
+     "source": "content.js:1-350"
     },
     {
      "from": "C1",
@@ -2645,7 +2660,7 @@
     "Neither callback is cancelled. A leftover 250 ms timer from cycle N can fire during cycle N+1 and run that cycle's scan before its animation frame (earlier, never twice). Leftover timers die within 250 ms: no unbounded timer growth.",
     "In a hidden tab every scan cycle leaves one frozen requestAnimationFrame callback that cannot fire until the tab is visible; on a constantly mutating page these accumulate (at most one per background-timer tick) and all run as no-ops on the first visible frame.",
     "No per-frame loop is reintroduced: a scan that changes nothing produces no mutation and therefore no new cycle; the leftover callback is a single no-op.",
-    "Hidden-tab latency is 250 ms plus browser background-timer throttling (commonly 1 s, possibly far longer after long hiding); browser-dependent. The capture-phase guard is immediate regardless (content.js:293-304).",
+    "Hidden-tab latency is 250 ms plus browser background-timer throttling (commonly 1 s, possibly far longer after long hiding); browser-dependent. The capture-phase guard is immediate regardless (content.js:322-333).",
     "Nothing schedules a scan at allowOnce.until (content.js:119).",
     "After an extension reload the orphaned script gets no storage events and sendMessage throws (content.js:245).",
     "Records come from a DOM CustomEvent any page-world script can dispatch (content.js:47).",
@@ -4170,7 +4185,7 @@
   },
   {
    "description": "SPA navigation: 500 ms pathname poll schedules a scan.",
-   "source": "content.js:317-320"
+   "source": "content.js:346-349"
   },
   {
    "description": "inject.js 'xvg:media' -> content.js caches -> scan. A new record replaces the byThumb/byMedia entry, but inherits following=true from the previous byMedia entry with the same mediaId and screenName; byTweet keeps the first record.",
@@ -4766,7 +4781,7 @@
    "residual_differences": [
     "no extension click handler"
    ],
-   "source": "content.js:293-304"
+   "source": "content.js:322-333"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -4802,7 +4817,7 @@
    "residual_differences": [
     "no extension click handler"
    ],
-   "source": "content.js:293-304"
+   "source": "content.js:322-333"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -4838,7 +4853,7 @@
    "residual_differences": [
     "no extension click handler"
    ],
-   "source": "content.js:293-304"
+   "source": "content.js:322-333"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -4862,7 +4877,7 @@
    "residual_differences": [
     "covered"
    ],
-   "source": "content.css:1-8"
+   "source": "content.css:1-9"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -4886,7 +4901,7 @@
    "residual_differences": [
     "covered"
    ],
-   "source": "content.css:1-8"
+   "source": "content.css:1-9"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -4922,7 +4937,7 @@
    "residual_differences": [
     "covered"
    ],
-   "source": "content.css:1-8"
+   "source": "content.css:1-9"
   },
   {
    "component": "One <video> element on an X page (content.js per-element gate)",
@@ -5469,7 +5484,7 @@
   {
    "severity": "note",
    "description": "[1.2.0 #11] guard reacts after the media event.",
-   "source": "content.js:293-304",
+   "source": "content.js:322-333",
    "status_reason": "unchanged.",
    "status_now": "still_present"
   },
@@ -5819,9 +5834,9 @@
   {
    "severity": "bug",
    "description": "[1.4.0 first audit]: in small tiles (.xvg-small) the message element is hidden, so the three failure notices and the author/reason line are never visible; the mode is decided once at overlay creation from clientHeight only.",
-   "source": "content.js:197,179-191; content.css:17-21",
+   "source": "content.js:197,179-191; content.css:18-22",
    "status_now": "changed",
-   "status_reason": "failure notes visible in small mode and mode re-decided per block() (content.js:197; content.css:20); reason line still hidden, width ignored."
+   "status_reason": "failure notes visible in small mode and mode re-decided per block() (content.js:197; content.css:21); reason line still hidden, width ignored."
   },
   {
    "severity": "bug",
@@ -5875,7 +5890,7 @@
   {
    "severity": "note",
    "description": "[1.4.0 first audit]: the nudge is a second click listener on the overlay; class xvg-nudge is never removed and no reduced-motion preference is honoured.",
-   "source": "content.js:164-170; content.css:15-16",
+   "source": "content.js:164-170; content.css:16-17",
    "status_now": "still_present",
    "status_reason": "unchanged."
   },
@@ -5893,6 +5908,18 @@
    "severity": "note",
    "description": "NEW (1.4.0 re-audit): small mode follows the box height only when block() runs (DOM mutation, media event, storage change), not on resize; box.clientHeight is read for every blocked video on every scan.",
    "source": "content.js:197"
+  },
+  {
+   "severity": "note",
+   "description": "[1.4.1 first version]: touch/pointer events from a cover never reach X. Script-driven swipes (media viewer, vertical video feed, carousels) starting on a cover cannot work; layers that close on an outside pointerdown stay open; the overlay's own pointer/touch stop listeners are now dead; ancestor touch-action restrictions still limit the intended scrolling.",
+   "source": "content.js:160-161,292-319; content.css:8",
+   "status_now": "changed",
+   "status_reason": "narrowed to vertical moves of a drag starting on a cover (content.js:292-319); vertical X gestures and ancestor touch-action limits remain."
+  },
+  {
+   "severity": "note",
+   "description": "NEW (1.4.1 narrowed): direction is fixed from the first move with >= (ties and zero movement count as vertical); browsers without a touch slop can misclassify sideways swipes. X's capture listeners see press and lift but not the moves of a vertical drag from a cover. Vertical X gestures (video feed, swipe-to-close) started on a cover are hidden from X.",
+   "source": "content.js:292-319"
   }
  ]
 }

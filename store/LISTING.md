@@ -1,6 +1,6 @@
 # Chrome Web Store listing — paste-ready
 
-Upload: `store/x-video-gate-1.4.0.zip`
+Upload: `store/x-video-gate-1.4.1.zip`
 
 ## Store listing tab
 

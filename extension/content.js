@@ -289,16 +289,33 @@
     setTimeout(run, 250);
   }
 
-  // A finger that lands on a cover is the page's to scroll with. X never sees
-  // the touch at all, so its handlers can't treat it as a drag on the video
-  // and cancel the scroll. Registered on window in the capture phase, so it
-  // runs before any of X's listeners, and passive, so it never delays the
-  // scroll. A tap still becomes a click on the Play button: stopping these
-  // events doesn't stop the browser from turning a tap into a click.
-  for (const t of ["touchstart", "touchmove", "touchend", "pointerdown", "pointermove", "pointerup"]) {
-    window.addEventListener(t, (e) => {
-      if (e.target instanceof Element && e.target.closest(".xvg-overlay")) e.stopImmediatePropagation();
-    }, { capture: true, passive: true });
+  // A vertical drag that starts on a cover is the page's to scroll with: X
+  // never sees those moves, so its handlers can't treat them as a drag on the
+  // video and cancel the scroll. Sideways drags still reach X (photo
+  // carousels, the media viewer), and so do presses and lifts (menus that
+  // close on an outside tap). Window + capture runs before X's listeners;
+  // passive never delays the scroll.
+  let drag = null; // { x, y, dir } for a touch that began on a cover
+  window.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    drag = t && e.touches.length === 1 && e.target instanceof Element && e.target.closest(".xvg-overlay")
+      ? { x: t.clientX, y: t.clientY, dir: null } : null;
+  }, { capture: true, passive: true });
+  const hideVertical = (e) => {
+    if (!drag) return;
+    if (!drag.dir) {
+      const p = e.touches ? e.touches[0] : e;
+      if (!p) return;
+      // Chrome sends no moves inside its touch slop, so the first one already
+      // shows which way the finger is going.
+      drag.dir = Math.abs(p.clientY - drag.y) >= Math.abs(p.clientX - drag.x) ? "v" : "h";
+    }
+    if (drag.dir === "v") e.stopImmediatePropagation();
+  };
+  window.addEventListener("touchmove", hideVertical, { capture: true, passive: true });
+  window.addEventListener("pointermove", (e) => { if (e.pointerType === "touch") hideVertical(e); }, { capture: true, passive: true });
+  for (const t of ["touchend", "touchcancel"]) {
+    window.addEventListener(t, (e) => { if (!e.touches.length) drag = null; }, { capture: true, passive: true });
   }
 
   // Hard stop: any play attempt on a non-allowed video is cancelled immediately.
