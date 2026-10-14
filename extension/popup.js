@@ -36,21 +36,39 @@ function loosenings(next) {
 
 function commit(next) {
   chrome.storage.local.set({ settings: next }, () => {
-    if (chrome.runtime.lastError) return;
-    current = next;
-    $("saved").style.visibility = "visible";
-    setTimeout(() => ($("saved").style.visibility = "hidden"), 2000);
+    const failed = !!chrome.runtime.lastError;
+    if (!failed) current = next;
+    say(failed ? "Couldn't save. Try again." : "Saved", failed);
   });
+}
+
+let sayTimer = null;
+function say(text, bad) {
+  const el = $("saved");
+  el.textContent = text;
+  el.classList.toggle("bad", !!bad);
+  el.style.visibility = "visible";
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(() => (el.style.visibility = "hidden"), bad ? 6000 : 2000);
 }
 
 function show(view) {
   $("form").hidden = view !== "form";
   $("gate").hidden = view !== "gate";
-  shownAt = performance.now();
+  settle();
 }
 
 // A button that has only just appeared ignores clicks, so the second half of
-// a double click can't answer a question the user hasn't seen yet.
+// a double click can't answer a question the user hasn't seen yet. It also
+// LOOKS inactive for that moment, so the ignored click isn't a mystery.
+function settle() {
+  shownAt = performance.now();
+  document.body.classList.add("settling");
+  setTimeout(() => {
+    if (!fresh()) document.body.classList.remove("settling");
+  }, 620);
+}
+
 function fresh() {
   return performance.now() - shownAt < 600;
 }
@@ -92,7 +110,7 @@ function gate(next, what) {
       // The two buttons trade places, so tapping the same spot through the
       // wait lands on "Keep blocking", not on the final yes.
       $("gate").classList.add("last");
-      shownAt = performance.now();
+      settle();
       yes.onclick = () => { if (fresh()) return; commit(next); show("form"); };
     };
     tick();

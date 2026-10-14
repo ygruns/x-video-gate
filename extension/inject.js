@@ -27,6 +27,8 @@
       id: real.rest_id || legacy.id_str || null,
       screenName: core.screen_name || legacy.screen_name || null,
       following: !!(legacy.following || rel.following),
+      // false when the response simply doesn't say either way
+      followKnown: legacy.following !== undefined || rel.following !== undefined,
     };
   }
 
@@ -63,6 +65,7 @@
         kind: m.type,
         screenName: user.screenName,
         following: user.following || isMe,
+        followKnown: user.followKnown || !!isMe,
         isMe: !!isMe,
         text: (legacy.full_text || "").slice(0, 280),
         variants: bestVariants(m.video_info),

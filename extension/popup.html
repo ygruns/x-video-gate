@@ -16,6 +16,8 @@
   button { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 999px;
     background: #1d9bf0; color: #fff; font: 600 14px inherit; }
   #saved { text-align: center; margin-top: 8px; color: #00ba7c; visibility: hidden; }
+  #saved.bad { color: #f4212e; }
+  .settling button { opacity: .5; pointer-events: none; }
   [hidden] { display: none !important; }
   #gate-msg { opacity: .85; min-height: 60px; }
   button:disabled { opacity: .5; }
@@ -35,7 +37,7 @@
     <textarea id="allowlist" spellcheck="false" autocapitalize="off"></textarea>
   </div>
   <button id="save" type="button" disabled>Save</button>
-  <div id="saved">Saved — reload X to apply everywhere</div>
+  <div id="saved" role="status">Saved</div>
   </div>
   <div id="gate" hidden>
     <h1 id="gate-title"></h1>

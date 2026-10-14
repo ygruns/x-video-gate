@@ -27,10 +27,11 @@
     let list;
     try { list = JSON.parse(e.detail); } catch { return; }
     for (const rec of list) {
-      // A later response that merely omits the follow flag must not turn a
-      // followed author's video into a blocked one.
+      // A later response that doesn't say whether you follow the author must
+      // not turn a followed author's video into a blocked one. One that says
+      // "not followed" outright still does.
       const old = rec.mediaId && byMedia.get(rec.mediaId);
-      if (old && old.following && old.screenName === rec.screenName) rec.following = true;
+      if (rec.followKnown === false && old && old.following && old.screenName === rec.screenName) rec.following = true;
       if (rec.thumb) byThumb.set(rec.thumb, rec);
       if (rec.mediaId) byMedia.set(rec.mediaId, rec);
       if (rec.tweetId) {
@@ -144,16 +145,24 @@
         if (Date.now() - lastOpen < 1500) return;
         // X may have swapped the <video> element since this overlay was made.
         const current = box.querySelector("video");
-        if (current && openSingle(current)) { lastOpen = Date.now(); return; }
-        ov.dataset.xvgNote = "1";
-        setText(ov.querySelector(".xvg-msg"), "Can't open this one in a new tab");
+        const note = (text) => {
+          lastOpen = 0;
+          ov.dataset.xvgNote = "1";
+          setText(ov.querySelector(".xvg-msg"), text);
+        };
+        const result = current ? openSingle(current, () => note("Couldn't open the tab. Tap again.")) : "nothing";
+        if (result === "sent") lastOpen = Date.now();
+        else if (result === "stale") note("The extension was updated. Reload this page.");
+        else note("Can't open this one in a new tab");
       });
       box.appendChild(ov);
     }
     if (ov.dataset.xvgNote) {
       // Keep the "can't open" notice only while there is still nothing to open.
+      // Notes about a failed attempt stay; "nothing to open" lifts once there is something.
+      const nothing = ov.querySelector(".xvg-msg").dataset.xvgText === "Can't open this one in a new tab";
       const openable = (rec && (rec.variants.length || rec.tweetId)) || tweetIdFromArticle(video.closest("article"));
-      if (!openable) return;
+      if (!nothing || !openable) return;
       delete ov.dataset.xvgNote;
     }
     const who = rec && rec.screenName ? "@" + rec.screenName : "an account you don't follow";
@@ -187,24 +196,29 @@
     if (ov) ov.remove();
   }
 
-  // Returns false when there is nothing to open (no direct file, no post id).
-  function openSingle(video) {
+  // "sent", or "nothing" (no direct file and no post id), or "stale" (this
+  // page outlived an extension update and can no longer reach it).
+  function openSingle(video, onFail) {
     const rec = recordFor(video);
     const tweetId = (rec && rec.tweetId) || tweetIdFromArticle(video.closest("article"));
     const variants = (rec && rec.variants) || [];
-    if (!variants.length && !tweetId) return false;
-    chrome.runtime.sendMessage({
-      type: "xvg:open",
-      payload: {
-        tweetId,
-        screenName: rec && rec.screenName,
-        text: rec && rec.text,
-        variants,
-        poster: video.getAttribute("poster") || "",
-        kind: rec && rec.kind,
-      },
-    });
-    return true;
+    if (!variants.length && !tweetId) return "nothing";
+    try {
+      chrome.runtime.sendMessage({
+        type: "xvg:open",
+        payload: {
+          tweetId,
+          screenName: rec && rec.screenName,
+          text: rec && rec.text,
+          variants,
+          poster: video.getAttribute("poster") || "",
+          kind: rec && rec.kind,
+        },
+      }, () => { if (chrome.runtime.lastError) onFail(); });
+    } catch {
+      return "stale";
+    }
+    return "sent";
   }
 
   // ---- scanning ----

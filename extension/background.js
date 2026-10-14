@@ -1,8 +1,9 @@
 // Opens the single-video player tab. If X gave us direct MP4 links, the video
 // plays on a bare extension page (no feed at all). Otherwise it falls back to
 // the post's own page with a one-time pass for just that post's video.
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, respond) => {
   if (!msg || msg.type !== "xvg:open") return;
+  respond({ ok: true }); // lets the page tell "received" from "never arrived"
   cleanup();
   const p = msg.payload || {};
   const opener = sender.tab ? { openerTabId: sender.tab.id, index: sender.tab.index + 1 } : {};

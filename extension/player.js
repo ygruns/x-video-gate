@@ -4,13 +4,24 @@
   const v = document.getElementById("v");
   const sel = document.getElementById("quality");
 
-  document.getElementById("close").onclick = () => window.close();
+  document.getElementById("close").onclick = () => {
+    // window.close() is refused for some tabs; removing the tab is not.
+    chrome.tabs.getCurrent((tab) => {
+      if (tab && tab.id != null) chrome.tabs.remove(tab.id);
+      else window.close();
+    });
+  };
+
+  function fail(text) {
+    document.getElementById("main").innerHTML = '<div class="err"></div>';
+    document.querySelector(".err").textContent = text;
+    sel.hidden = true;
+  }
 
   chrome.storage.local.get(key, (r) => {
     const p = r[key];
     if (!p || !p.variants || !p.variants.length) {
-      document.getElementById("main").innerHTML = '<div class="err">This video link has expired. Go back and tap it again.</div>';
-      sel.hidden = true;
+      fail("This video link has expired. Close this tab and tap Play on the post again.");
       return;
     }
     if (p.screenName) {
@@ -36,6 +47,17 @@
 
     v.src = p.variants[0].url;
     v.play().catch(() => {});
+
+    // A file that won't load: fall to the next quality, and say so when none is left.
+    const dead = new Set();
+    v.addEventListener("error", () => {
+      dead.add(v.currentSrc || v.src);
+      const next = p.variants.find((x) => !dead.has(x.url));
+      if (!next) { fail("This video couldn't be loaded. Check your connection, then close this tab and tap Play again."); return; }
+      sel.value = next.url;
+      v.src = next.url;
+      v.play().catch(() => {});
+    });
 
     // Position and play state to carry across a quality switch. Kept outside
     // the handler so a second switch before the first has loaded still
